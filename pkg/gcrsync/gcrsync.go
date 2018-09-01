@@ -85,8 +85,6 @@ func (g *Gcr) Sync() {
 	if len(images) <= 10 {
 		g.Process(images)
 	} else {
-		logrus.Infoln(len(images))
-		logrus.Infoln(images)
 		count := len(images) / 10
 		if len(images)%10 > 0 {
 			count++
