@@ -24,6 +24,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/json-iterator/go"
@@ -54,12 +56,14 @@ func (g *Gcr) process(image Image) {
 		}
 
 		// pull image
-		_, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
+		r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
 		if !utils.CheckErr(err) {
 			logrus.Errorf("Failed to pull image: %s", oldImageName)
 			return
 		}
-		logrus.Debugf("Pull image: %s success.", oldImageName)
+		io.Copy(ioutil.Discard, r)
+		r.Close()
+		logrus.Infof("Pull image: %s success.", oldImageName)
 
 		// tag it
 		err = g.dockerClient.ImageTag(ctx, oldImageName, newImageName)
@@ -67,7 +71,7 @@ func (g *Gcr) process(image Image) {
 			logrus.Errorf("Failed to tag image [%s] ==> [%s]", oldImageName, newImageName)
 			return
 		}
-		logrus.Debugf("Tag image: %s success.", oldImageName)
+		logrus.Infof("Tag image: %s success.", oldImageName)
 
 		// push image
 		authConfig := types.AuthConfig{
@@ -80,12 +84,14 @@ func (g *Gcr) process(image Image) {
 			return
 		}
 		authStr := base64.URLEncoding.EncodeToString(encodedJSON)
-		_, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
+		r, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
 		if !utils.CheckErr(err) {
 			logrus.Errorf("Failed to push image: %s", newImageName)
 			return
 		}
-		logrus.Debugf("Push image: %s success.", newImageName)
+		io.Copy(ioutil.Discard, r)
+		r.Close()
+		logrus.Infof("Push image: %s success.", newImageName)
 
 		// clean image
 		g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
