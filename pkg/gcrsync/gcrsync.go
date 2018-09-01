@@ -132,7 +132,7 @@ func (g *Gcr) Init() {
 	g.gcloudClient = gclient
 
 	logrus.Debugln("Init docker client.")
-	dclient, err := client.NewClientWithOpts(client.FromEnv)
+	dclient, err := client.NewEnvClient()
 	utils.CheckAndExit(err)
 	g.dockerClient = dclient
 

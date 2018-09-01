@@ -27,18 +27,18 @@ import (
 
 	"github.com/mritd/gcrsync/pkg/utils"
 
-	"go.etcd.io/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 var once sync.Once
-var db *bbolt.DB
+var db *bolt.DB
 
-func dbinit() *bbolt.DB {
+func dbinit() *bolt.DB {
 	once.Do(func() {
 		var err error
-		db, err = bbolt.Open("gcr.db", 0600, nil)
+		db, err = bolt.Open("gcr.db", 0600, nil)
 		utils.CheckAndExit(err)
-		db.Update(func(tx *bbolt.Tx) error {
+		db.Update(func(tx *bolt.Tx) error {
 			_, err = tx.CreateBucketIfNotExists([]byte("gcr"))
 			return err
 		})
@@ -50,7 +50,7 @@ func checkImage(imageName string) bool {
 
 	imageExist := false
 
-	err := db.View(func(tx *bbolt.Tx) error {
+	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("gcr"))
 		result := b.Get([]byte(imageName))
 		if len(result) > 0 {
@@ -67,7 +67,7 @@ func checkImage(imageName string) bool {
 }
 
 func putImage(imageName string) {
-	err := db.Update(func(tx *bbolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("gcr"))
 		return b.Put([]byte(imageName), []byte("true"))
 	})
