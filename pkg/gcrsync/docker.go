@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/json-iterator/go"
@@ -55,13 +54,11 @@ func (g *Gcr) process(image Image) {
 		}
 
 		// pull image
-		reader, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
+		_, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
 		if !utils.CheckErr(err) {
 			logrus.Errorf("Failed to pull image: %s", oldImageName)
 			return
 		}
-		io.Copy(logrus.StandardLogger().Writer(), reader)
-		reader.Close()
 		logrus.Debugf("Pull image: %s success.", oldImageName)
 
 		// tag it
@@ -83,13 +80,11 @@ func (g *Gcr) process(image Image) {
 			return
 		}
 		authStr := base64.URLEncoding.EncodeToString(encodedJSON)
-		reader, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
+		_, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
 		if !utils.CheckErr(err) {
 			logrus.Errorf("Failed to push image: %s", newImageName)
 			return
 		}
-		io.Copy(logrus.StandardLogger().Writer(), reader)
-		reader.Close()
 		logrus.Debugf("Push image: %s success.", newImageName)
 
 		// clean image
