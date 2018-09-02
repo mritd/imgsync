@@ -81,6 +81,7 @@ func (g *Gcr) hubImages() {
 
 	var result struct {
 		Results []struct {
+			User string
 			Name string
 		}
 	}
@@ -91,7 +92,7 @@ func (g *Gcr) hubImages() {
 	for _, repo := range result.Results {
 		tags := g.hubImageTags(repo.Name)
 		for _, tag := range tags {
-			g.dockerHubImages[repo.Name+":"+tag] = true
+			g.dockerHubImages[repo.User+"/"+repo.Name+":"+tag] = true
 		}
 	}
 }
