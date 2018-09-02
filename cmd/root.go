@@ -23,7 +23,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 
@@ -33,7 +32,7 @@ import (
 )
 
 var debug bool
-var prefix, proxy, dockerUser, dockerPassword string
+var proxy, dockerUser, dockerPassword string
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -46,12 +45,7 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			logrus.SetLevel(logrus.DebugLevel)
 		}
 
-		if !strings.HasSuffix(prefix, "/") {
-			prefix += "/"
-		}
-
 		gcr := &gcrsync.Gcr{
-			Prefix:         prefix,
 			Proxy:          proxy,
 			DockerUser:     dockerUser,
 			DockerPassword: dockerPassword,
@@ -70,7 +64,6 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug mode")
-	rootCmd.PersistentFlags().StringVar(&prefix, "prefix", "gcrxio", "image prefix")
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")

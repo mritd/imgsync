@@ -47,13 +47,13 @@ func (g *Gcr) process(image Image) {
 	for _, tag := range image.Tags {
 		oldImageName := fmt.Sprintf("%s:%s", image.Name, tag)
 		tmpS := strings.Split(image.Name, "/")
-		newImageName := fmt.Sprintf("%s:%s", g.Prefix+tmpS[len(tmpS)-1], tag)
+		newImageName := fmt.Sprintf("%s:%s", g.DockerUser+"/"+tmpS[len(tmpS)-1], tag)
 
-		logrus.Infof("Process image: %s", oldImageName)
 		if g.dockerHubImages[newImageName] {
-			logrus.Infof("Image [%s] found, skip!", oldImageName)
+			logrus.Debugf("Image [%s] found, skip!", oldImageName)
 			return
 		}
+		logrus.Infof("Process image: %s", oldImageName)
 
 		// pull image
 		r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
