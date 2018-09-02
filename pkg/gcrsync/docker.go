@@ -50,7 +50,7 @@ func (g *Gcr) process(image Image) {
 		newImageName := fmt.Sprintf("%s:%s", g.Prefix+tmpS[len(tmpS)-1], tag)
 
 		logrus.Infof("Process image: %s", oldImageName)
-		if g.dockerHubImages[oldImageName] {
+		if g.dockerHubImages[newImageName] {
 			logrus.Infof("Image [%s] found, skip!", oldImageName)
 			return
 		}
