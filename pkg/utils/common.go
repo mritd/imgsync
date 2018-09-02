@@ -40,3 +40,11 @@ func CheckAndExit(err error) {
 		os.Exit(1)
 	}
 }
+
+func ErrorExit(msg string, code int) {
+	logrus.Errorln(msg)
+	if code == 0 {
+		code = 1
+	}
+	os.Exit(code)
+}

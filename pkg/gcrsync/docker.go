@@ -50,7 +50,7 @@ func (g *Gcr) process(image Image) {
 		newImageName := fmt.Sprintf("%s:%s", g.Prefix+tmpS[len(tmpS)-1], tag)
 
 		logrus.Infof("Process image: %s", oldImageName)
-		if checkImage(oldImageName) {
+		if g.dockerHubImages[oldImageName] {
 			logrus.Debugf("Image [%s] found, skip!", oldImageName)
 			return
 		}
@@ -97,9 +97,6 @@ func (g *Gcr) process(image Image) {
 		g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
 		g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
 		logrus.Debugf("Remove image: %s success.", oldImageName)
-
-		logrus.Debugln("Save db.")
-		putImage(oldImageName)
 
 		logrus.Debugln("Append CHANGELOG.md")
 		g.update <- oldImageName

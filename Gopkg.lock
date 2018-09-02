@@ -130,14 +130,6 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:2a890e7debf4e44a43e999e9ebe121385347ef6e36f0efe2199b46b7b2d3dbc7"
-  name = "go.etcd.io/bbolt"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "acbc2c426a444a65e0cbfdcbb3573857bf18b465"
-  version = "v1.3.1-etcd.7"
-
-[[projects]]
   branch = "master"
   digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
   name = "golang.org/x/crypto"
@@ -178,7 +170,6 @@
     "github.com/docker/docker/client",
     "github.com/json-iterator/go",
     "github.com/spf13/cobra",
-    "go.etcd.io/bbolt",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

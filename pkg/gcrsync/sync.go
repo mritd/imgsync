@@ -23,17 +23,9 @@ package gcrsync
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/docker/docker/client"
-
-	"github.com/Sirupsen/logrus"
-
-	"github.com/json-iterator/go"
 
 	"github.com/mritd/gcrsync/pkg/utils"
 )
@@ -41,28 +33,14 @@ import (
 const (
 	GcrImages    = "https://gcr.io/v2/google_containers/tags/list"
 	GcrImageTags = "https://gcr.io/v2/google_containers/%s/tags/list"
+	HubLogin     = "https://hub.docker.com/v2/users/login/"
+	HubRepos     = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
+	HubTags      = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000 "
 )
 
-type Image struct {
-	Name string
-	Tags []string
-}
-
-type Gcr struct {
-	Proxy          string
-	Prefix         string
-	DockerUser     string
-	DockerPassword string
-	ImageLimit     int
-	gcloudClient   *http.Client
-	dockerClient   *client.Client
-	update         chan string
-}
-
 func (g *Gcr) Sync() {
-	defer db.Close()
 
-	images := g.imageList()
+	images := g.gcrImageList()
 	chgwg := new(sync.WaitGroup)
 	chgwg.Add(1)
 
@@ -90,11 +68,6 @@ func (g *Gcr) Sync() {
 		chglog.WriteString(newContents)
 	}()
 
-	// limit
-	if len(images) > g.ImageLimit {
-		images = images[:g.ImageLimit]
-	}
-
 	count := len(images) / 10
 	if len(images)%10 > 0 {
 		count++
@@ -118,84 +91,4 @@ func (g *Gcr) Sync() {
 	close(g.update)
 	chgwg.Wait()
 
-}
-
-func (g *Gcr) Init() {
-	logrus.Debugln("Init google container client.")
-	var gclient *http.Client
-	if g.Proxy != "" {
-		p := func(_ *http.Request) (*url.URL, error) {
-			return url.Parse(g.Proxy)
-		}
-		transport := &http.Transport{Proxy: p}
-		gclient = &http.Client{
-			Timeout:   5 * time.Second,
-			Transport: transport,
-		}
-	} else {
-		gclient = &http.Client{
-			Timeout: 5 * time.Second,
-		}
-	}
-	g.gcloudClient = gclient
-
-	logrus.Debugln("Init docker client.")
-	dclient, err := client.NewEnvClient()
-	utils.CheckAndExit(err)
-	g.dockerClient = dclient
-
-	logrus.Debugln("Init bbolt database.")
-	dbinit()
-
-	logrus.Debugln("Init update channel.")
-	g.update = make(chan string, 10)
-
-	logrus.Debugln("Init success...")
-}
-
-func (g *Gcr) imageList() []Image {
-
-	var images []Image
-
-	publicImages := g.publicImages()
-	for _, imageName := range publicImages {
-		req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, imageName), nil)
-		utils.CheckAndExit(err)
-
-		resp, err := g.gcloudClient.Do(req)
-		utils.CheckAndExit(err)
-
-		b, err := ioutil.ReadAll(resp.Body)
-		utils.CheckAndExit(err)
-		resp.Body.Close()
-
-		var tags []string
-		jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
-
-		logrus.Debugf("Found image [%s] tags: %s", imageName, tags)
-
-		images = append(images, Image{
-			Name: GcrRegistryPrefix + imageName,
-			Tags: tags,
-		})
-
-	}
-	return images
-}
-
-func (g *Gcr) publicImages() []string {
-
-	req, err := http.NewRequest("GET", GcrImages, nil)
-	utils.CheckAndExit(err)
-
-	resp, err := g.gcloudClient.Do(req)
-	utils.CheckAndExit(err)
-	defer resp.Body.Close()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	utils.CheckAndExit(err)
-
-	var images []string
-	jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &images)
-	return images
 }
