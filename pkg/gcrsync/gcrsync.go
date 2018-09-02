@@ -65,6 +65,8 @@ func (g *Gcr) Sync() {
 	images := g.imageList()
 	chgwg := new(sync.WaitGroup)
 	chgwg.Add(1)
+
+	// doc gen
 	go func() {
 		defer chgwg.Done()
 		var init bool
@@ -78,41 +80,42 @@ func (g *Gcr) Sync() {
 			select {
 			case imageName := <-g.update:
 				if !init {
-					updateInfo += fmt.Sprintf("\n### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
+					updateInfo += fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
 					init = true
 				}
 				updateInfo += "- " + imageName + "\n"
 			}
 		}
-		newContents := updateInfo + string(contents)
+		newContents := updateInfo + "\n" + string(contents)
 		chglog.WriteString(newContents)
 	}()
 
-	if len(images) <= 10 {
-		g.Process(images)
-	} else {
-		count := len(images) / 10
-		if len(images)%10 > 0 {
-			count++
-		}
-
-		var wg = new(sync.WaitGroup)
-		wg.Add(count)
-
-		for i := 0; i < count; i++ {
-			x := i
-			go func() {
-				defer wg.Done()
-				if x == count-1 {
-					g.Process(images[x*10 : x*10+len(images)%10])
-				} else {
-					g.Process(images[x*10 : (x+1)*10])
-				}
-			}()
-		}
-		wg.Wait()
-		close(g.update)
+	// limit
+	if len(images) > g.ImageLimit {
+		images = images[:g.ImageLimit]
 	}
+
+	count := len(images) / 10
+	if len(images)%10 > 0 {
+		count++
+	}
+
+	var wg = new(sync.WaitGroup)
+	wg.Add(count)
+
+	for i := 0; i < count; i++ {
+		x := i
+		go func() {
+			defer wg.Done()
+			if x == count-1 {
+				g.Process(images[x*10 : x*10+len(images)%10])
+			} else {
+				g.Process(images[x*10 : (x+1)*10])
+			}
+		}()
+	}
+	wg.Wait()
+	close(g.update)
 	chgwg.Wait()
 
 }
