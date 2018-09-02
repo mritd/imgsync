@@ -51,7 +51,7 @@ func (g *Gcr) process(image Image) {
 
 		logrus.Infof("Process image: %s", oldImageName)
 		if g.dockerHubImages[oldImageName] {
-			logrus.Debugf("Image [%s] found, skip!", oldImageName)
+			logrus.Infof("Image [%s] found, skip!", oldImageName)
 			return
 		}
 
