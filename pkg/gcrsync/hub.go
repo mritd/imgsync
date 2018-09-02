@@ -11,7 +11,7 @@ import (
 	"github.com/mritd/gcrsync/pkg/utils"
 )
 
-func (g *Gcr) hubToken() string {
+func (g *Gcr) hubToken() {
 	req, err := http.NewRequest("POST", HubLogin, bytes.NewBufferString(`{"username": "`+g.DockerUser+`", "password": "`+g.DockerPassword+`"}`))
 	utils.CheckAndExit(err)
 	req.Header.Set("Content-Type", "application/json")
@@ -28,7 +28,6 @@ func (g *Gcr) hubToken() string {
 		utils.ErrorExit("Failed to get docker hub token", 1)
 	}
 	g.dockerHubToken = token
-	return token
 }
 
 func (g *Gcr) hubImageTags(repo string) []string {

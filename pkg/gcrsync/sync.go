@@ -36,39 +36,49 @@ import (
 )
 
 const (
-	GcrImages    = "https://gcr.io/v2/google_containers/tags/list"
-	GcrImageTags = "https://gcr.io/v2/google_containers/%s/tags/list"
-	HubLogin     = "https://hub.docker.com/v2/users/login/"
-	HubRepos     = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
-	HubTags      = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
+	GcrRegistryPrefix = "gcr.io/google-containers/"
+	GcrImages         = "https://gcr.io/v2/google_containers/tags/list"
+	GcrImageTags      = "https://gcr.io/v2/google_containers/%s/tags/list"
+	HubLogin          = "https://hub.docker.com/v2/users/login/"
+	HubRepos          = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
+	HubTags           = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
 )
 
 func (g *Gcr) Sync() {
 
 	images := g.gcrImageList()
-	chgwg := new(sync.WaitGroup)
-	chgwg.Add(1)
 
 	// doc gen
+	chgdone := make(chan int, 1)
+	chgwg := new(sync.WaitGroup)
+	chgwg.Add(1)
 	go func() {
 		defer chgwg.Done()
+
+		var contents []byte
+		chglog, err := os.Open("CHANGELOG.md")
+		if !utils.CheckErr(err) {
+			contents, _ = ioutil.ReadAll(chglog)
+			chglog.Close()
+		}
+
 		var init bool
-		chglog, err := os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-		utils.CheckAndExit(err)
-		defer chglog.Close()
-		contents, err := ioutil.ReadAll(chglog)
-		utils.CheckAndExit(err)
 		updateInfo := ""
 		for {
 			select {
 			case imageName := <-g.update:
+				logrus.Infoln(imageName)
 				if !init {
 					updateInfo += fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
 					init = true
 				}
 				updateInfo += "- " + imageName + "\n"
+			case <-chgdone:
+				goto ChangeLogDone
 			}
 		}
+	ChangeLogDone:
+		chglog, err = os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		newContents := updateInfo + "\n" + string(contents)
 		chglog.WriteString(newContents)
 	}()
@@ -93,7 +103,7 @@ func (g *Gcr) Sync() {
 		}()
 	}
 	wg.Wait()
-	close(g.update)
+	chgdone <- 1
 	chgwg.Wait()
 
 }
@@ -126,7 +136,7 @@ func (g *Gcr) Init() {
 	g.hubImages()
 
 	logrus.Debugln("Init update channel.")
-	g.update = make(chan string, 10)
+	g.update = make(chan string, 20)
 
 	logrus.Debugln("Init success...")
 }

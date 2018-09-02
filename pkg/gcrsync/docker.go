@@ -37,10 +37,6 @@ import (
 	"github.com/docker/docker/api/types"
 )
 
-const (
-	GcrRegistryPrefix = "gcr.io/google-containers/"
-)
-
 func (g *Gcr) process(image Image) {
 	ctx := context.Background()
 
@@ -53,51 +49,55 @@ func (g *Gcr) process(image Image) {
 			logrus.Debugf("Image [%s] found, skip!", oldImageName)
 			return
 		}
+
 		logrus.Infof("Process image: %s", oldImageName)
 
-		// pull image
-		r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
-		if !utils.CheckErr(err) {
-			logrus.Errorf("Failed to pull image: %s", oldImageName)
-			return
-		}
-		io.Copy(ioutil.Discard, r)
-		r.Close()
-		logrus.Infof("Pull image: %s success.", oldImageName)
+		if !g.TestMode {
 
-		// tag it
-		err = g.dockerClient.ImageTag(ctx, oldImageName, newImageName)
-		if !utils.CheckErr(err) {
-			logrus.Errorf("Failed to tag image [%s] ==> [%s]", oldImageName, newImageName)
-			return
-		}
-		logrus.Infof("Tag image: %s success.", oldImageName)
+			// pull image
+			r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
+			if !utils.CheckErr(err) {
+				logrus.Errorf("Failed to pull image: %s", oldImageName)
+				return
+			}
+			io.Copy(ioutil.Discard, r)
+			r.Close()
+			logrus.Infof("Pull image: %s success.", oldImageName)
 
-		// push image
-		authConfig := types.AuthConfig{
-			Username: g.DockerUser,
-			Password: g.DockerPassword,
-		}
-		encodedJSON, err := jsoniter.Marshal(authConfig)
-		if !utils.CheckErr(err) {
-			logrus.Errorln("Failed to marshal docker config")
-			return
-		}
-		authStr := base64.URLEncoding.EncodeToString(encodedJSON)
-		r, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
-		if !utils.CheckErr(err) {
-			logrus.Errorf("Failed to push image: %s", newImageName)
-			return
-		}
-		io.Copy(ioutil.Discard, r)
-		r.Close()
-		logrus.Infof("Push image: %s success.", newImageName)
+			// tag it
+			err = g.dockerClient.ImageTag(ctx, oldImageName, newImageName)
+			if !utils.CheckErr(err) {
+				logrus.Errorf("Failed to tag image [%s] ==> [%s]", oldImageName, newImageName)
+				return
+			}
+			logrus.Infof("Tag image: %s success.", oldImageName)
 
-		// clean image
-		g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
-		g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
-		logrus.Debugf("Remove image: %s success.", oldImageName)
+			// push image
+			authConfig := types.AuthConfig{
+				Username: g.DockerUser,
+				Password: g.DockerPassword,
+			}
+			encodedJSON, err := jsoniter.Marshal(authConfig)
+			if !utils.CheckErr(err) {
+				logrus.Errorln("Failed to marshal docker config")
+				return
+			}
+			authStr := base64.URLEncoding.EncodeToString(encodedJSON)
+			r, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
+			if !utils.CheckErr(err) {
+				logrus.Errorf("Failed to push image: %s", newImageName)
+				return
+			}
+			io.Copy(ioutil.Discard, r)
+			r.Close()
+			logrus.Infof("Push image: %s success.", newImageName)
 
+			// clean image
+			g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
+			g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
+			logrus.Debugf("Remove image: %s success.", oldImageName)
+
+		}
 		logrus.Debugln("Append CHANGELOG.md")
 		g.update <- oldImageName
 		logrus.Debugln("Done.")

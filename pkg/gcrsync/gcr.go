@@ -21,6 +21,7 @@ type Gcr struct {
 	Proxy           string
 	DockerUser      string
 	DockerPassword  string
+	TestMode        bool
 	httpClient      *http.Client
 	dockerClient    *client.Client
 	dockerHubToken  string
