@@ -53,6 +53,7 @@ type Gcr struct {
 	Prefix         string
 	DockerUser     string
 	DockerPassword string
+	ImageLimit     int
 	gcloudClient   *http.Client
 	dockerClient   *client.Client
 	update         chan string
@@ -67,19 +68,24 @@ func (g *Gcr) Sync() {
 	go func() {
 		defer chgwg.Done()
 		var init bool
-		chglog, err := os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		chglog, err := os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 		utils.CheckAndExit(err)
 		defer chglog.Close()
+		contents, err := ioutil.ReadAll(chglog)
+		utils.CheckAndExit(err)
+		updateInfo := ""
 		for {
 			select {
 			case imageName := <-g.update:
 				if !init {
-					chglog.WriteString(fmt.Sprintf("\n### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05")))
+					updateInfo += fmt.Sprintf("\n### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
 					init = true
 				}
-				chglog.WriteString("- " + imageName + "\n")
+				updateInfo += "- " + imageName + "\n"
 			}
 		}
+		newContents := updateInfo + string(contents)
+		chglog.WriteString(newContents)
 	}()
 
 	if len(images) <= 10 {
@@ -105,6 +111,7 @@ func (g *Gcr) Sync() {
 			}()
 		}
 		wg.Wait()
+		close(g.update)
 	}
 	chgwg.Wait()
 
