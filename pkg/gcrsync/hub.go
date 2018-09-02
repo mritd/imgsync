@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
-
 	"github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/pkg/utils"
 )
@@ -96,5 +94,4 @@ func (g *Gcr) hubImages() {
 			g.dockerHubImages[repo.Name+":"+tag] = true
 		}
 	}
-	logrus.Infoln(g.dockerHubImages)
 }
