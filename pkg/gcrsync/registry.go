@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Sirupsen/logrus"
+
 	"github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/pkg/utils"
 )
@@ -40,38 +42,60 @@ func (g *Gcr) regImageList() []string {
 	var images []string
 	publicImageNames := g.regPublicImageNames()
 
-	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(len(publicImageNames))
-	imgNameCh := make(chan string, 20)
+	logrus.Debugf("Number of registry images: %d", len(publicImageNames))
 
-	for _, imageName := range publicImageNames {
-		tmpImgName := imageName
+	var batchNum int
+	if len(publicImageNames) < g.QueryLimit {
+		g.QueryLimit = len(publicImageNames)
+		batchNum = 1
+	} else {
+		batchNum = len(publicImageNames) / g.QueryLimit
+	}
+
+	logrus.Debugf("Registry images batchNum: %d", batchNum)
+
+	imgNameCh := make(chan string, 20)
+	imgGetWg := new(sync.WaitGroup)
+	imgGetWg.Add(g.QueryLimit)
+
+	for i := 0; i < g.QueryLimit; i++ {
+
+		var tmpImageNames []string
+
+		if i+1 == g.QueryLimit {
+			tmpImageNames = publicImageNames[i*batchNum:]
+		} else {
+			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]
+		}
+
 		go func() {
 			defer imgGetWg.Done()
+			for _, imageName := range tmpImageNames {
+				req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, imageName), nil)
+				utils.CheckAndExit(err)
+				req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
 
-			req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, tmpImgName), nil)
-			utils.CheckAndExit(err)
-			req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
+				resp, err := g.httpClient.Do(req)
+				utils.CheckAndExit(err)
+				defer resp.Body.Close()
 
-			resp, err := g.httpClient.Do(req)
-			utils.CheckAndExit(err)
-			defer resp.Body.Close()
+				var result struct {
+					Results []struct {
+						Name string
+					}
+				}
 
-			var result struct {
-				Results []struct {
-					Name string
+				b, err := ioutil.ReadAll(resp.Body)
+				utils.CheckAndExit(err)
+				jsoniter.Unmarshal(b, &result)
+
+				for _, tag := range result.Results {
+					imgNameCh <- imageName + ":" + tag.Name
 				}
 			}
 
-			b, err := ioutil.ReadAll(resp.Body)
-			utils.CheckAndExit(err)
-			jsoniter.Unmarshal(b, &result)
-
-			for _, tag := range result.Results {
-				imgNameCh <- tmpImgName + ":" + tag.Name
-			}
-
 		}()
+
 	}
 
 	go func() {

@@ -58,14 +58,39 @@ func (g *Gcr) Sync() {
 
 	logrus.Infof("Number of images waiting to be processed: %d", len(gcrImages))
 
-	processWg := new(sync.WaitGroup)
-	processWg.Add(len(gcrImages))
+	var batchNum int
+	if len(gcrImages) < g.ProcessLimit {
+		g.ProcessLimit = len(gcrImages)
+		batchNum = 1
+	} else {
+		batchNum = len(gcrImages) / g.ProcessLimit
+	}
 
-	for k := range gcrImages {
-		imageName := k
+	logrus.Infof("Image process batchNum: %d", batchNum)
+
+	keys := make([]string, 0, len(gcrImages))
+	for key := range gcrImages {
+		keys = append(keys, key)
+	}
+
+	processWg := new(sync.WaitGroup)
+	processWg.Add(g.ProcessLimit)
+
+	for i := 0; i < g.ProcessLimit; i++ {
+
+		var tmpImages []string
+
+		if i+1 == g.ProcessLimit {
+			tmpImages = keys[i*batchNum:]
+		} else {
+			tmpImages = keys[i*batchNum : (i+1)*batchNum]
+		}
+
 		go func() {
 			defer processWg.Done()
-			g.Process(imageName)
+			for _, imageName := range tmpImages {
+				g.Process(imageName)
+			}
 		}()
 	}
 

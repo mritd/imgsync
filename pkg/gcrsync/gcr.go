@@ -24,6 +24,8 @@ type Gcr struct {
 	DockerPassword  string
 	NameSpace       string
 	TestMode        bool
+	QueryLimit      int
+	ProcessLimit    int
 	httpClient      *http.Client
 	dockerClient    *client.Client
 	dockerHubToken  string
@@ -36,34 +38,54 @@ func (g *Gcr) gcrImageList() map[string]bool {
 	images := make(map[string]bool)
 	publicImageNames := g.gcrPublicImageNames()
 
+	logrus.Debugf("Number of gcr images: %d", len(publicImageNames))
+
+	var batchNum int
+	if len(publicImageNames) < g.QueryLimit {
+		g.QueryLimit = len(publicImageNames)
+		batchNum = 1
+	} else {
+		batchNum = len(publicImageNames) / g.QueryLimit
+	}
+
+	logrus.Debugf("Gcr images batchNum: %d", batchNum)
+
 	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(len(publicImageNames))
+	imgGetWg.Add(g.QueryLimit)
 	imgNameCh := make(chan string, 20)
 
-	for _, imageName := range publicImageNames {
-		tmpImgName := imageName
+	for i := 0; i < g.QueryLimit; i++ {
+		var tmpImageNames []string
+
+		if i+1 == g.QueryLimit {
+			tmpImageNames = publicImageNames[i*batchNum:]
+		} else {
+			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]
+		}
+
 		go func() {
 			defer imgGetWg.Done()
+			for _, imageName := range tmpImageNames {
+				req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, imageName), nil)
+				utils.CheckAndExit(err)
 
-			req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, tmpImgName), nil)
-			utils.CheckAndExit(err)
+				resp, err := g.httpClient.Do(req)
+				utils.CheckAndExit(err)
 
-			resp, err := g.httpClient.Do(req)
-			utils.CheckAndExit(err)
+				b, err := ioutil.ReadAll(resp.Body)
+				utils.CheckAndExit(err)
+				resp.Body.Close()
 
-			b, err := ioutil.ReadAll(resp.Body)
-			utils.CheckAndExit(err)
-			resp.Body.Close()
+				var tags []string
+				jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
+				logrus.Debugf("Found image [%s] tags: %s", imageName, tags)
 
-			var tags []string
-			jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
-			logrus.Debugf("Found image [%s] tags: %s", tmpImgName, tags)
-
-			for _, tag := range tags {
-				imgNameCh <- tmpImgName + ":" + tag
+				for _, tag := range tags {
+					imgNameCh <- imageName + ":" + tag
+				}
 			}
-
 		}()
+
 	}
 
 	go func() {

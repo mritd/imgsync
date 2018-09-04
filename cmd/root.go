@@ -33,6 +33,7 @@ import (
 
 var debug, test bool
 var proxy, dockerUser, dockerPassword, nameSpace string
+var queryLimit, processLimit int
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -51,6 +52,8 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			DockerPassword: dockerPassword,
 			NameSpace:      nameSpace,
 			TestMode:       test,
+			QueryLimit:     queryLimit,
+			ProcessLimit:   processLimit,
 		}
 		gcr.Init()
 		gcr.Sync()
@@ -71,4 +74,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
 	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google_containers", "google container registry namespace")
+	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 1000, "http query limit")
+	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 5, "image process limit")
 }
