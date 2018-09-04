@@ -36,28 +36,48 @@ import (
 )
 
 const (
-	GcrRegistryPrefix = "gcr.io/%s/"
-	GcrImages         = "https://gcr.io/v2/%s/tags/list"
-	GcrImageTags      = "https://gcr.io/v2/%s/%s/tags/list"
-	HubLogin          = "https://hub.docker.com/v2/users/login/"
-	HubRepos          = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
-	HubTags           = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
+	GcrRegistryTpl = "gcr.io/%s/%s"
+	GcrImages      = "https://gcr.io/v2/%s/tags/list"
+	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
+	HubLogin       = "https://hub.docker.com/v2/users/login/"
+	HubRepos       = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
+	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
 )
 
 func (g *Gcr) Sync() {
 
-	images := g.gcrImageList()
+	gcrImages := g.gcrImageList()
+	regImages := g.regImageList()
+
+	for _, imageName := range regImages {
+		if gcrImages[imageName] {
+			logrus.Debugf("Image [%s] found, skip!", imageName)
+			delete(gcrImages, imageName)
+		}
+	}
+
+	logrus.Infof("Number of images waiting to be processed: %d", len(gcrImages))
+
+	processWg := new(sync.WaitGroup)
+	processWg.Add(len(gcrImages))
+
+	for k := range gcrImages {
+		imageName := k
+		go func() {
+			defer processWg.Done()
+			g.Process(imageName)
+		}()
+	}
 
 	// doc gen
-	chgdone := make(chan int, 1)
-	chgwg := new(sync.WaitGroup)
-	chgwg.Add(1)
+	chgWg := new(sync.WaitGroup)
+	chgWg.Add(1)
 	go func() {
-		defer chgwg.Done()
+		defer chgWg.Done()
 
 		var contents []byte
 		chglog, err := os.Open("CHANGELOG.md")
-		if !utils.CheckErr(err) {
+		if utils.CheckErr(err) {
 			contents, _ = ioutil.ReadAll(chglog)
 			chglog.Close()
 		}
@@ -66,50 +86,35 @@ func (g *Gcr) Sync() {
 		updateInfo := ""
 		for {
 			select {
-			case imageName := <-g.update:
-				logrus.Infoln(imageName)
-				if !init {
-					updateInfo += fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
-					init = true
+			case imageName, ok := <-g.update:
+				if ok {
+					if !init {
+						updateInfo += fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
+						init = true
+					}
+					updateInfo += "- " + imageName + "\n"
+				} else {
+					goto ChangeLogDone
 				}
-				updateInfo += "- " + imageName + "\n"
-			case <-chgdone:
-				goto ChangeLogDone
 			}
 		}
 	ChangeLogDone:
-		chglog, err = os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		chglog, err = os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		utils.CheckAndExit(err)
+		defer chglog.Close()
 		newContents := updateInfo + "\n" + string(contents)
 		chglog.WriteString(newContents)
 	}()
 
-	count := len(images) / 10
-	if len(images)%10 > 0 {
-		count++
-	}
-
-	var wg = new(sync.WaitGroup)
-	wg.Add(count)
-
-	for i := 0; i < count; i++ {
-		x := i
-		go func() {
-			defer wg.Done()
-			if x == count-1 {
-				g.Process(images[x*10 : x*10+len(images)%10])
-			} else {
-				g.Process(images[x*10 : (x+1)*10])
-			}
-		}()
-	}
-	wg.Wait()
-	chgdone <- 1
-	chgwg.Wait()
+	processWg.Wait()
+	close(g.update)
+	chgWg.Wait()
 
 }
 
 func (g *Gcr) Init() {
-	logrus.Debugln("Init http client.")
+
+	logrus.Infoln("Init http client.")
 	var httpClient *http.Client
 	if g.Proxy != "" {
 		p := func(_ *http.Request) (*url.URL, error) {
@@ -127,16 +132,13 @@ func (g *Gcr) Init() {
 	}
 	g.httpClient = httpClient
 
-	logrus.Debugln("Init docker client.")
+	logrus.Infoln("Init docker client.")
 	dockerClient, err := client.NewEnvClient()
 	utils.CheckAndExit(err)
 	g.dockerClient = dockerClient
 
-	logrus.Debugln("Init docker hub images.")
-	g.hubImages()
-
-	logrus.Debugln("Init update channel.")
+	logrus.Infoln("Init update channel.")
 	g.update = make(chan string, 20)
 
-	logrus.Debugln("Init success...")
+	logrus.Infoln("Init success...")
 }

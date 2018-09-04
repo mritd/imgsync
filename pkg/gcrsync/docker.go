@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
 
 	"github.com/json-iterator/go"
 
@@ -37,77 +36,62 @@ import (
 	"github.com/docker/docker/api/types"
 )
 
-func (g *Gcr) process(image Image) {
+func (g *Gcr) Process(imageName string) {
+
+	logrus.Infof("Process image: %s", imageName)
+
 	ctx := context.Background()
+	oldImageName := fmt.Sprintf(GcrRegistryTpl, g.NameSpace, imageName)
+	newImageName := g.DockerUser + "/" + imageName
 
-	for _, tag := range image.Tags {
-		oldImageName := fmt.Sprintf("%s:%s", image.Name, tag)
-		tmpS := strings.Split(image.Name, "/")
-		newImageName := fmt.Sprintf("%s:%s", g.DockerUser+"/"+tmpS[len(tmpS)-1], tag)
+	if !g.TestMode {
 
-		if g.dockerHubImages[newImageName] {
-			logrus.Debugf("Image [%s] found, skip!", oldImageName)
+		// pull image
+		r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
+		if !utils.CheckErr(err) {
+			logrus.Errorf("Failed to pull image: %s", oldImageName)
 			return
 		}
+		io.Copy(ioutil.Discard, r)
+		r.Close()
+		logrus.Infof("Pull image: %s success.", oldImageName)
 
-		logrus.Infof("Process image: %s", oldImageName)
-
-		if !g.TestMode {
-
-			// pull image
-			r, err := g.dockerClient.ImagePull(ctx, oldImageName, types.ImagePullOptions{})
-			if !utils.CheckErr(err) {
-				logrus.Errorf("Failed to pull image: %s", oldImageName)
-				return
-			}
-			io.Copy(ioutil.Discard, r)
-			r.Close()
-			logrus.Infof("Pull image: %s success.", oldImageName)
-
-			// tag it
-			err = g.dockerClient.ImageTag(ctx, oldImageName, newImageName)
-			if !utils.CheckErr(err) {
-				logrus.Errorf("Failed to tag image [%s] ==> [%s]", oldImageName, newImageName)
-				return
-			}
-			logrus.Infof("Tag image: %s success.", oldImageName)
-
-			// push image
-			authConfig := types.AuthConfig{
-				Username: g.DockerUser,
-				Password: g.DockerPassword,
-			}
-			encodedJSON, err := jsoniter.Marshal(authConfig)
-			if !utils.CheckErr(err) {
-				logrus.Errorln("Failed to marshal docker config")
-				return
-			}
-			authStr := base64.URLEncoding.EncodeToString(encodedJSON)
-			r, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
-			if !utils.CheckErr(err) {
-				logrus.Errorf("Failed to push image: %s", newImageName)
-				return
-			}
-			io.Copy(ioutil.Discard, r)
-			r.Close()
-			logrus.Infof("Push image: %s success.", newImageName)
-
-			// clean image
-			g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
-			g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
-			logrus.Debugf("Remove image: %s success.", oldImageName)
-
+		// tag it
+		err = g.dockerClient.ImageTag(ctx, oldImageName, newImageName)
+		if !utils.CheckErr(err) {
+			logrus.Errorf("Failed to tag image [%s] ==> [%s]", oldImageName, newImageName)
+			return
 		}
-		logrus.Debugln("Append CHANGELOG.md")
-		g.update <- oldImageName
-		logrus.Debugln("Done.")
-	}
+		logrus.Infof("Tag image: %s success.", oldImageName)
 
-}
+		// push image
+		authConfig := types.AuthConfig{
+			Username: g.DockerUser,
+			Password: g.DockerPassword,
+		}
+		encodedJSON, err := jsoniter.Marshal(authConfig)
+		if !utils.CheckErr(err) {
+			logrus.Errorln("Failed to marshal docker config")
+			return
+		}
+		authStr := base64.URLEncoding.EncodeToString(encodedJSON)
+		r, err = g.dockerClient.ImagePush(ctx, newImageName, types.ImagePushOptions{RegistryAuth: authStr})
+		if !utils.CheckErr(err) {
+			logrus.Errorf("Failed to push image: %s", newImageName)
+			return
+		}
+		io.Copy(ioutil.Discard, r)
+		r.Close()
+		logrus.Infof("Push image: %s success.", newImageName)
 
-func (g *Gcr) Process(images []Image) {
-	for _, image := range images {
-		img := image
-		g.process(img)
+		// clean image
+		g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
+		g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
+		logrus.Debugf("Remove image: %s success.", oldImageName)
+
 	}
+	logrus.Debugln("Append CHANGELOG.md")
+	g.update <- oldImageName
+	logrus.Debugln("Done.")
+
 }

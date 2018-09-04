@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/pkg/utils"
@@ -30,37 +31,71 @@ func (g *Gcr) hubToken() {
 	g.dockerHubToken = token
 }
 
-func (g *Gcr) hubImageTags(repo string) []string {
+func (g *Gcr) regImageList() []string {
 
 	if g.dockerHubToken == "" {
 		g.hubToken()
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, repo), nil)
-	utils.CheckAndExit(err)
-	req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
+	var images []string
+	publicImageNames := g.regPublicImageNames()
 
-	resp, err := g.httpClient.Do(req)
-	utils.CheckAndExit(err)
-	defer resp.Body.Close()
+	imgGetWg := new(sync.WaitGroup)
+	imgGetWg.Add(len(publicImageNames))
+	imgNameCh := make(chan string, 20)
 
-	var result struct {
-		Results []struct {
-			Name string
+	for _, imageName := range publicImageNames {
+		tmpImgName := imageName
+		go func() {
+			defer imgGetWg.Done()
+
+			req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, tmpImgName), nil)
+			utils.CheckAndExit(err)
+			req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
+
+			resp, err := g.httpClient.Do(req)
+			utils.CheckAndExit(err)
+			defer resp.Body.Close()
+
+			var result struct {
+				Results []struct {
+					Name string
+				}
+			}
+
+			b, err := ioutil.ReadAll(resp.Body)
+			utils.CheckAndExit(err)
+			jsoniter.Unmarshal(b, &result)
+
+			for _, tag := range result.Results {
+				imgNameCh <- tmpImgName + ":" + tag.Name
+			}
+
+		}()
+	}
+
+	go func() {
+		for {
+			select {
+			case imageName, ok := <-imgNameCh:
+				if ok {
+					images = append(images, imageName)
+				} else {
+					goto imgSetExit
+				}
+			}
 		}
-	}
-	b, err := ioutil.ReadAll(resp.Body)
-	utils.CheckAndExit(err)
-	jsoniter.Unmarshal(b, &result)
+	imgSetExit:
+	}()
 
-	var tags []string
-	for _, tag := range result.Results {
-		tags = append(tags, tag.Name)
-	}
-	return tags
+	imgGetWg.Wait()
+	close(imgNameCh)
+
+	return images
+
 }
 
-func (g *Gcr) hubImages() {
+func (g *Gcr) regPublicImageNames() []string {
 
 	if g.dockerHubToken == "" {
 		g.hubToken()
@@ -88,10 +123,9 @@ func (g *Gcr) hubImages() {
 	utils.CheckAndExit(err)
 	jsoniter.Unmarshal(b, &result)
 
+	var imageNames []string
 	for _, repo := range result.Results {
-		tags := g.hubImageTags(repo.Name)
-		for _, tag := range tags {
-			g.dockerHubImages[repo.User+"/"+repo.Name+":"+tag] = true
-		}
+		imageNames = append(imageNames, repo.Name)
 	}
+	return imageNames
 }

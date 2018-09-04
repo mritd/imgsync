@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 
 	"github.com/docker/docker/client"
 
@@ -30,37 +31,62 @@ type Gcr struct {
 	update          chan string
 }
 
-func (g *Gcr) gcrImageList() []Image {
+func (g *Gcr) gcrImageList() map[string]bool {
 
-	var images []Image
+	images := make(map[string]bool)
+	publicImageNames := g.gcrPublicImageNames()
 
-	publicImages := g.gcrPublicImages()
-	for _, imageName := range publicImages {
-		req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, imageName), nil)
-		utils.CheckAndExit(err)
+	imgGetWg := new(sync.WaitGroup)
+	imgGetWg.Add(len(publicImageNames))
+	imgNameCh := make(chan string, 20)
 
-		resp, err := g.httpClient.Do(req)
-		utils.CheckAndExit(err)
+	for _, imageName := range publicImageNames {
+		tmpImgName := imageName
+		go func() {
+			defer imgGetWg.Done()
 
-		b, err := ioutil.ReadAll(resp.Body)
-		utils.CheckAndExit(err)
-		resp.Body.Close()
+			req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, tmpImgName), nil)
+			utils.CheckAndExit(err)
 
-		var tags []string
-		jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
+			resp, err := g.httpClient.Do(req)
+			utils.CheckAndExit(err)
 
-		logrus.Debugf("Found image [%s] tags: %s", imageName, tags)
+			b, err := ioutil.ReadAll(resp.Body)
+			utils.CheckAndExit(err)
+			resp.Body.Close()
 
-		images = append(images, Image{
-			Name: fmt.Sprintf(GcrRegistryPrefix, g.NameSpace) + imageName,
-			Tags: tags,
-		})
+			var tags []string
+			jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
+			logrus.Debugf("Found image [%s] tags: %s", tmpImgName, tags)
 
+			for _, tag := range tags {
+				imgNameCh <- tmpImgName + ":" + tag
+			}
+
+		}()
 	}
+
+	go func() {
+		for {
+			select {
+			case imageName, ok := <-imgNameCh:
+				if ok {
+					images[imageName] = true
+				} else {
+					goto imgSetExit
+				}
+			}
+		}
+	imgSetExit:
+	}()
+
+	imgGetWg.Wait()
+	close(imgNameCh)
+
 	return images
 }
 
-func (g *Gcr) gcrPublicImages() []string {
+func (g *Gcr) gcrPublicImageNames() []string {
 
 	req, err := http.NewRequest("GET", fmt.Sprintf(GcrImages, g.NameSpace), nil)
 	utils.CheckAndExit(err)
@@ -72,7 +98,7 @@ func (g *Gcr) gcrPublicImages() []string {
 	b, err := ioutil.ReadAll(resp.Body)
 	utils.CheckAndExit(err)
 
-	var images []string
-	jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &images)
-	return images
+	var imageNames []string
+	jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &imageNames)
+	return imageNames
 }
