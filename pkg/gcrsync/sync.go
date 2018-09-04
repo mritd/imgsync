@@ -36,9 +36,9 @@ import (
 )
 
 const (
-	GcrRegistryPrefix = "gcr.io/google-containers/"
-	GcrImages         = "https://gcr.io/v2/google_containers/tags/list"
-	GcrImageTags      = "https://gcr.io/v2/google_containers/%s/tags/list"
+	GcrRegistryPrefix = "gcr.io/%s/"
+	GcrImages         = "https://gcr.io/v2/%s/tags/list"
+	GcrImageTags      = "https://gcr.io/v2/%s/%s/tags/list"
 	HubLogin          = "https://hub.docker.com/v2/users/login/"
 	HubRepos          = "https://hub.docker.com/v2/repositories/%s/?page_size=10000"
 	HubTags           = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"

@@ -21,6 +21,7 @@ type Gcr struct {
 	Proxy           string
 	DockerUser      string
 	DockerPassword  string
+	NameSpace       string
 	TestMode        bool
 	httpClient      *http.Client
 	dockerClient    *client.Client
@@ -35,7 +36,7 @@ func (g *Gcr) gcrImageList() []Image {
 
 	publicImages := g.gcrPublicImages()
 	for _, imageName := range publicImages {
-		req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, imageName), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, imageName), nil)
 		utils.CheckAndExit(err)
 
 		resp, err := g.httpClient.Do(req)
@@ -51,7 +52,7 @@ func (g *Gcr) gcrImageList() []Image {
 		logrus.Debugf("Found image [%s] tags: %s", imageName, tags)
 
 		images = append(images, Image{
-			Name: GcrRegistryPrefix + imageName,
+			Name: fmt.Sprintf(GcrRegistryPrefix, g.NameSpace) + imageName,
 			Tags: tags,
 		})
 
@@ -61,7 +62,7 @@ func (g *Gcr) gcrImageList() []Image {
 
 func (g *Gcr) gcrPublicImages() []string {
 
-	req, err := http.NewRequest("GET", GcrImages, nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(GcrImages, g.NameSpace), nil)
 	utils.CheckAndExit(err)
 
 	resp, err := g.httpClient.Do(req)

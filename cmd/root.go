@@ -32,7 +32,7 @@ import (
 )
 
 var debug, test bool
-var proxy, dockerUser, dockerPassword string
+var proxy, dockerUser, dockerPassword, nameSpace string
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -49,6 +49,7 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			Proxy:          proxy,
 			DockerUser:     dockerUser,
 			DockerPassword: dockerPassword,
+			NameSpace:      nameSpace,
 			TestMode:       test,
 		}
 		gcr.Init()
@@ -69,4 +70,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
+	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google_containers", "google container registry namespace")
 }
