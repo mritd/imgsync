@@ -92,6 +92,6 @@ func (g *Gcr) Process(imageName string) {
 	}
 	logrus.Debugln("Append CHANGELOG.md")
 	g.update <- oldImageName
-	logrus.Debugln("Done.")
+	logrus.Infoln("Done.")
 
 }
