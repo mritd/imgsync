@@ -125,10 +125,6 @@ func (g *Gcr) regPublicImageNames() []string {
 		g.hubToken()
 	}
 
-	if g.dockerHubImages == nil {
-		g.dockerHubImages = make(map[string]bool)
-	}
-
 	req, err := http.NewRequest("GET", fmt.Sprintf(HubRepos, g.DockerUser), nil)
 	utils.CheckAndExit(err)
 	req.Header.Set("Authorization", "JWT "+g.dockerHubToken)

@@ -19,18 +19,17 @@ type Image struct {
 }
 
 type Gcr struct {
-	Proxy           string
-	DockerUser      string
-	DockerPassword  string
-	NameSpace       string
-	TestMode        bool
-	QueryLimit      int
-	ProcessLimit    int
-	httpClient      *http.Client
-	dockerClient    *client.Client
-	dockerHubToken  string
-	dockerHubImages map[string]bool
-	update          chan string
+	Proxy          string
+	DockerUser     string
+	DockerPassword string
+	NameSpace      string
+	TestMode       bool
+	QueryLimit     int
+	ProcessLimit   int
+	httpClient     *http.Client
+	dockerClient   *client.Client
+	dockerHubToken string
+	update         chan string
 }
 
 func (g *Gcr) gcrImageList() map[string]bool {
