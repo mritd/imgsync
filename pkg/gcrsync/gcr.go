@@ -77,7 +77,6 @@ func (g *Gcr) gcrImageList() map[string]bool {
 
 				var tags []string
 				jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
-				logrus.Debugf("Found image [%s] tags: %s", imageName, tags)
 
 				for _, tag := range tags {
 					imgNameCh <- imageName + ":" + tag

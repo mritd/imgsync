@@ -41,7 +41,7 @@ const (
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
 	HubLogin       = "https://hub.docker.com/v2/users/login/"
 	HubRepos       = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
 )
 
 func (g *Gcr) Sync() {
@@ -50,6 +50,7 @@ func (g *Gcr) Sync() {
 	regImages := g.regImageList()
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
+	logrus.Infof("Docker registry images total: %d", len(regImages))
 
 	for _, imageName := range regImages {
 		if gcrImages[imageName] {
@@ -150,9 +151,11 @@ func (g *Gcr) Monitor() {
 			gcrSum := len(gcrImages)
 			regSum := len(regImages)
 
+			logrus.Debugf("Google container registry images total: %d", gcrSum)
+			logrus.Debugf("Docker registry images total: %d", regSum)
+
 			for _, imageName := range regImages {
 				if gcrImages[imageName] {
-					logrus.Debugf("Image [%s] found, skip!", imageName)
 					delete(gcrImages, imageName)
 				}
 			}

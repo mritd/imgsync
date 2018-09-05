@@ -125,7 +125,7 @@ func (g *Gcr) regPublicImageNames() []string {
 	return imageNames
 }
 
-func (g *Gcr) requestRegistryImageNames(addr string, imageNames *[]string) []string {
+func (g *Gcr) requestRegistryImageNames(addr string, imageNames *[]string) {
 
 	logrus.Debugf("Registry request: %s", addr)
 
@@ -158,7 +158,6 @@ func (g *Gcr) requestRegistryImageNames(addr string, imageNames *[]string) []str
 		g.requestRegistryImageNames(result.Next, imageNames)
 	}
 
-	return *imageNames
 }
 
 func (g *Gcr) buildRegistryRequest(addr string) *http.Request {
