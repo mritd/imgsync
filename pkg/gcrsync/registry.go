@@ -45,24 +45,25 @@ func (g *Gcr) regImageList() []string {
 	logrus.Debugf("Number of registry images: %d", len(publicImageNames))
 
 	var batchNum int
-	if len(publicImageNames) < g.QueryLimit {
-		g.QueryLimit = len(publicImageNames)
+	limit := g.QueryLimit
+	if len(publicImageNames) < limit {
+		limit = len(publicImageNames)
 		batchNum = 1
 	} else {
-		batchNum = len(publicImageNames) / g.QueryLimit
+		batchNum = len(publicImageNames) / limit
 	}
 
 	logrus.Debugf("Registry images batchNum: %d", batchNum)
 
 	imgNameCh := make(chan string, 20)
 	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(g.QueryLimit)
+	imgGetWg.Add(limit)
 
-	for i := 0; i < g.QueryLimit; i++ {
+	for i := 0; i < limit; i++ {
 
 		var tmpImageNames []string
 
-		if i+1 == g.QueryLimit {
+		if i+1 == limit {
 			tmpImageNames = publicImageNames[i*batchNum:]
 		} else {
 			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]

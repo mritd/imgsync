@@ -40,23 +40,24 @@ func (g *Gcr) gcrImageList() map[string]bool {
 	logrus.Debugf("Number of gcr images: %d", len(publicImageNames))
 
 	var batchNum int
-	if len(publicImageNames) < g.QueryLimit {
-		g.QueryLimit = len(publicImageNames)
+	limit := g.QueryLimit
+	if len(publicImageNames) < limit {
+		limit = len(publicImageNames)
 		batchNum = 1
 	} else {
-		batchNum = len(publicImageNames) / g.QueryLimit
+		batchNum = len(publicImageNames) / limit
 	}
 
 	logrus.Debugf("Gcr images batchNum: %d", batchNum)
 
 	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(g.QueryLimit)
+	imgGetWg.Add(limit)
 	imgNameCh := make(chan string, 20)
 
-	for i := 0; i < g.QueryLimit; i++ {
+	for i := 0; i < limit; i++ {
 		var tmpImageNames []string
 
-		if i+1 == g.QueryLimit {
+		if i+1 == limit {
 			tmpImageNames = publicImageNames[i*batchNum:]
 		} else {
 			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]
