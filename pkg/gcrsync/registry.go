@@ -120,20 +120,27 @@ func (g *Gcr) regImageList() []string {
 }
 
 func (g *Gcr) regPublicImageNames() []string {
+	var imageNames []string
+	g.requestRegistryImageNames(fmt.Sprintf(HubRepos, g.DockerUser), &imageNames)
+	return imageNames
+}
+
+func (g *Gcr) requestRegistryImageNames(addr string, imageNames *[]string) []string {
+
+	logrus.Debugf("Registry request: %s", addr)
 
 	if g.dockerHubToken == "" {
 		g.hubToken()
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf(HubRepos, g.DockerUser), nil)
-	utils.CheckAndExit(err)
-	req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
-
+	req := g.buildRegistryRequest(addr)
 	resp, err := g.httpClient.Do(req)
 	utils.CheckAndExit(err)
 	defer resp.Body.Close()
 
 	var result struct {
+		Count   int
+		Next    string
 		Results []struct {
 			User string
 			Name string
@@ -143,9 +150,20 @@ func (g *Gcr) regPublicImageNames() []string {
 	utils.CheckAndExit(err)
 	jsoniter.Unmarshal(b, &result)
 
-	var imageNames []string
 	for _, repo := range result.Results {
-		imageNames = append(imageNames, repo.Name)
+		*imageNames = append(*imageNames, repo.Name)
 	}
-	return imageNames
+
+	if strings.TrimSpace(result.Next) != "" {
+		g.requestRegistryImageNames(result.Next, imageNames)
+	}
+
+	return *imageNames
+}
+
+func (g *Gcr) buildRegistryRequest(addr string) *http.Request {
+	req, err := http.NewRequest("GET", addr, nil)
+	utils.CheckAndExit(err)
+	req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
+	return req
 }

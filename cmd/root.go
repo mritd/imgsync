@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var debug, test bool
+var debug, test, monitor bool
 var proxy, dockerUser, dockerPassword, nameSpace string
 var queryLimit, processLimit int
 
@@ -56,7 +56,11 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			ProcessLimit:   processLimit,
 		}
 		gcr.Init()
-		gcr.Sync()
+		if !monitor {
+			gcr.Sync()
+		} else {
+			gcr.Monitor()
+		}
 	},
 }
 
@@ -70,6 +74,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug mode")
 	rootCmd.PersistentFlags().BoolVar(&test, "test", false, "run test mode(only write changelog)")
+	rootCmd.PersistentFlags().BoolVar(&monitor, "monitor", false, "monitor images sync detail")
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
