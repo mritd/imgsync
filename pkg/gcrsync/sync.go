@@ -49,6 +49,8 @@ func (g *Gcr) Sync() {
 	gcrImages := g.gcrImageList()
 	regImages := g.regImageList()
 
+	logrus.Infof("Google container registry images total: %d", len(gcrImages))
+
 	for _, imageName := range regImages {
 		if gcrImages[imageName] {
 			logrus.Debugf("Image [%s] found, skip!", imageName)
