@@ -176,10 +176,10 @@ func (g *Gcr) Init() {
 	g.dockerClient = dockerClient
 
 	logrus.Infoln("Init limit channel.")
-	for i := 0; i < len(g.QueryLimit); i++ {
+	for i := 0; i < cap(g.QueryLimit); i++ {
 		g.QueryLimit <- 1
 	}
-	for i := 0; i < len(g.ProcessLimit); i++ {
+	for i := 0; i < cap(g.ProcessLimit); i++ {
 		g.ProcessLimit <- 1
 	}
 
