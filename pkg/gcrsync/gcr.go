@@ -45,6 +45,8 @@ func (g *Gcr) gcrImageList() map[string]bool {
 
 	for _, imageName := range publicImageNames {
 
+		tmpImageName := imageName
+
 		go func() {
 			defer func() {
 				g.QueryLimit <- 1
@@ -53,7 +55,7 @@ func (g *Gcr) gcrImageList() map[string]bool {
 
 			select {
 			case <-g.QueryLimit:
-				req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, imageName), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, tmpImageName), nil)
 				utils.CheckAndExit(err)
 
 				resp, err := g.httpClient.Do(req)
@@ -67,7 +69,7 @@ func (g *Gcr) gcrImageList() map[string]bool {
 				jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
 
 				for _, tag := range tags {
-					imgNameCh <- imageName + ":" + tag
+					imgNameCh <- tmpImageName + ":" + tag
 				}
 			}
 

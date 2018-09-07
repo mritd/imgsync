@@ -49,6 +49,9 @@ func (g *Gcr) regImageList() []string {
 	imgGetWg.Add(len(publicImageNames))
 
 	for _, imageName := range publicImageNames {
+
+		tmpImageName := imageName
+
 		go func() {
 			defer func() {
 				g.QueryLimit <- 1
@@ -57,7 +60,7 @@ func (g *Gcr) regImageList() []string {
 
 			select {
 			case <-g.QueryLimit:
-				req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, imageName), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, tmpImageName), nil)
 				utils.CheckAndExit(err)
 				req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
 
@@ -76,7 +79,7 @@ func (g *Gcr) regImageList() []string {
 				jsoniter.Unmarshal(b, &result)
 
 				for _, tag := range result.Results {
-					imgNameCh <- imageName + ":" + tag.Name
+					imgNameCh <- tmpImageName + ":" + tag.Name
 				}
 			}
 		}()
