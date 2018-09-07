@@ -52,8 +52,8 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			DockerPassword: dockerPassword,
 			NameSpace:      nameSpace,
 			TestMode:       test,
-			QueryLimit:     queryLimit,
-			ProcessLimit:   processLimit,
+			QueryLimit:     make(chan int, queryLimit),
+			ProcessLimit:   make(chan int, processLimit),
 		}
 		gcr.Init()
 		if !monitor {

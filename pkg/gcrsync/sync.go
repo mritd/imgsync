@@ -61,39 +61,21 @@ func (g *Gcr) Sync() {
 
 	logrus.Infof("Number of images waiting to be processed: %d", len(gcrImages))
 
-	var batchNum int
-	if len(gcrImages) < g.ProcessLimit {
-		g.ProcessLimit = len(gcrImages)
-		batchNum = 1
-	} else {
-		batchNum = len(gcrImages) / g.ProcessLimit
-	}
-
-	logrus.Infof("Image process batchNum: %d", batchNum)
-
 	keys := make([]string, 0, len(gcrImages))
 	for key := range gcrImages {
 		keys = append(keys, key)
 	}
 
 	processWg := new(sync.WaitGroup)
-	processWg.Add(g.ProcessLimit)
+	processWg.Add(len(keys))
 
-	for i := 0; i < g.ProcessLimit; i++ {
-
-		var tmpImages []string
-
-		if i+1 == g.ProcessLimit {
-			tmpImages = keys[i*batchNum:]
-		} else {
-			tmpImages = keys[i*batchNum : (i+1)*batchNum]
-		}
-
+	for _, imageName := range keys {
 		go func() {
-			defer processWg.Done()
-			for _, imageName := range tmpImages {
-				g.Process(imageName)
-			}
+			defer func() {
+				g.ProcessLimit <- 1
+				processWg.Done()
+			}()
+			g.Process(imageName)
 		}()
 	}
 
@@ -192,6 +174,14 @@ func (g *Gcr) Init() {
 	dockerClient, err := client.NewEnvClient()
 	utils.CheckAndExit(err)
 	g.dockerClient = dockerClient
+
+	logrus.Infoln("Init limit channel.")
+	for i := 0; i < len(g.QueryLimit); i++ {
+		g.QueryLimit <- 1
+	}
+	for i := 0; i < len(g.ProcessLimit); i++ {
+		g.ProcessLimit <- 1
+	}
 
 	logrus.Infoln("Init update channel.")
 	g.update = make(chan string, 20)

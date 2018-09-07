@@ -24,8 +24,8 @@ type Gcr struct {
 	DockerPassword string
 	NameSpace      string
 	TestMode       bool
-	QueryLimit     int
-	ProcessLimit   int
+	QueryLimit     chan int
+	ProcessLimit   chan int
 	httpClient     *http.Client
 	dockerClient   *client.Client
 	dockerHubToken string
@@ -39,33 +39,20 @@ func (g *Gcr) gcrImageList() map[string]bool {
 
 	logrus.Debugf("Number of gcr images: %d", len(publicImageNames))
 
-	var batchNum int
-	limit := g.QueryLimit
-	if len(publicImageNames) < limit {
-		limit = len(publicImageNames)
-		batchNum = 1
-	} else {
-		batchNum = len(publicImageNames) / limit
-	}
-
-	logrus.Debugf("Gcr images batchNum: %d", batchNum)
-
-	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(limit)
 	imgNameCh := make(chan string, 20)
+	imgGetWg := new(sync.WaitGroup)
+	imgGetWg.Add(len(publicImageNames))
 
-	for i := 0; i < limit; i++ {
-		var tmpImageNames []string
-
-		if i+1 == limit {
-			tmpImageNames = publicImageNames[i*batchNum:]
-		} else {
-			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]
-		}
+	for _, imageName := range publicImageNames {
 
 		go func() {
-			defer imgGetWg.Done()
-			for _, imageName := range tmpImageNames {
+			defer func() {
+				g.QueryLimit <- 1
+				imgGetWg.Done()
+			}()
+
+			select {
+			case <-g.QueryLimit:
 				req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, imageName), nil)
 				utils.CheckAndExit(err)
 
@@ -83,8 +70,8 @@ func (g *Gcr) gcrImageList() map[string]bool {
 					imgNameCh <- imageName + ":" + tag
 				}
 			}
-		}()
 
+		}()
 	}
 
 	go func() {

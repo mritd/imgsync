@@ -44,34 +44,19 @@ func (g *Gcr) regImageList() []string {
 
 	logrus.Debugf("Number of registry images: %d", len(publicImageNames))
 
-	var batchNum int
-	limit := g.QueryLimit
-	if len(publicImageNames) < limit {
-		limit = len(publicImageNames)
-		batchNum = 1
-	} else {
-		batchNum = len(publicImageNames) / limit
-	}
-
-	logrus.Debugf("Registry images batchNum: %d", batchNum)
-
 	imgNameCh := make(chan string, 20)
 	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(limit)
+	imgGetWg.Add(len(publicImageNames))
 
-	for i := 0; i < limit; i++ {
-
-		var tmpImageNames []string
-
-		if i+1 == limit {
-			tmpImageNames = publicImageNames[i*batchNum:]
-		} else {
-			tmpImageNames = publicImageNames[i*batchNum : (i+1)*batchNum]
-		}
-
+	for _, imageName := range publicImageNames {
 		go func() {
-			defer imgGetWg.Done()
-			for _, imageName := range tmpImageNames {
+			defer func() {
+				g.QueryLimit <- 1
+				imgGetWg.Done()
+			}()
+
+			select {
+			case <-g.QueryLimit:
 				req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, imageName), nil)
 				utils.CheckAndExit(err)
 				req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
@@ -94,9 +79,7 @@ func (g *Gcr) regImageList() []string {
 					imgNameCh <- imageName + ":" + tag.Name
 				}
 			}
-
 		}()
-
 	}
 
 	go func() {
