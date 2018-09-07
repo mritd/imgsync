@@ -8,9 +8,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/json-iterator/go"
+
 	"github.com/Sirupsen/logrus"
 
-	"github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/pkg/utils"
 )
 
@@ -39,16 +40,22 @@ func (g *Gcr) regImageList() []string {
 		g.hubToken()
 	}
 
-	var images []string
 	publicImageNames := g.regPublicImageNames()
 
 	logrus.Debugf("Number of registry images: %d", len(publicImageNames))
 
+	return g.regPublicImageTags(publicImageNames)
+
+}
+
+func (g *Gcr) regPublicImageTags(imageNames []string) []string {
+
+	var images []string
 	imgNameCh := make(chan string, 20)
 	imgGetWg := new(sync.WaitGroup)
-	imgGetWg.Add(len(publicImageNames))
+	imgGetWg.Add(len(imageNames))
 
-	for _, imageName := range publicImageNames {
+	for _, imageName := range imageNames {
 
 		tmpImageName := imageName
 
@@ -60,26 +67,10 @@ func (g *Gcr) regImageList() []string {
 
 			select {
 			case <-g.QueryLimit:
-				req, err := http.NewRequest("GET", fmt.Sprintf(HubTags, g.DockerUser, tmpImageName), nil)
-				utils.CheckAndExit(err)
-				req.Header.Set("Authorization", "JWT "+g.dockerHubToken)
-
-				resp, err := g.httpClient.Do(req)
-				utils.CheckAndExit(err)
-				defer resp.Body.Close()
-
-				var result struct {
-					Results []struct {
-						Name string
-					}
-				}
-
-				b, err := ioutil.ReadAll(resp.Body)
-				utils.CheckAndExit(err)
-				jsoniter.Unmarshal(b, &result)
-
-				for _, tag := range result.Results {
-					imgNameCh <- tmpImageName + ":" + tag.Name
+				var imageTags []string
+				g.requestRegistryImageTags(fmt.Sprintf(HubTags, g.DockerUser, tmpImageName), &imageTags)
+				for _, tag := range imageTags {
+					imgNameCh <- tmpImageName + ":" + tag
 				}
 			}
 		}()
@@ -101,9 +92,46 @@ func (g *Gcr) regImageList() []string {
 
 	imgGetWg.Wait()
 	close(imgNameCh)
-
 	return images
+}
 
+func (g *Gcr) requestRegistryImageTags(addr string, imageTags *[]string) int {
+
+	logrus.Debugf("Registry request: %s", addr)
+
+	if g.dockerHubToken == "" {
+		g.hubToken()
+	}
+
+	req := g.buildRegistryRequest(addr)
+	resp, err := g.httpClient.Do(req)
+	utils.CheckAndExit(err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logrus.Warningf("Failed to request: %s", addr)
+		return 0
+	}
+
+	var result struct {
+		Count   int
+		Next    string
+		Results []struct {
+			Name string
+		}
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	utils.CheckAndExit(err)
+	jsoniter.Unmarshal(b, &result)
+
+	for _, repo := range result.Results {
+		*imageTags = append(*imageTags, repo.Name)
+	}
+
+	if strings.TrimSpace(result.Next) != "" {
+		g.requestRegistryImageTags(result.Next, imageTags)
+	}
+	return result.Count
 }
 
 func (g *Gcr) regPublicImageNames() []string {
@@ -124,6 +152,11 @@ func (g *Gcr) requestRegistryImageNames(addr string, imageNames *[]string) {
 	resp, err := g.httpClient.Do(req)
 	utils.CheckAndExit(err)
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logrus.Warningf("Failed to request: %s", addr)
+		return
+	}
 
 	var result struct {
 		Count   int

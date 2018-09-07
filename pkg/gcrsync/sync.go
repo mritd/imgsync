@@ -39,9 +39,9 @@ const (
 	GcrRegistryTpl = "gcr.io/%s/%s"
 	GcrImages      = "https://gcr.io/v2/%s/tags/list"
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
-	HubLogin       = "https://hub.docker.com/v2/users/login/"
+	HubLogin       = "https://hub.docker.com/v2/users/login"
 	HubRepos       = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=10000"
+	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 )
 
 func (g *Gcr) Sync() {
@@ -70,12 +70,16 @@ func (g *Gcr) Sync() {
 	processWg.Add(len(keys))
 
 	for _, imageName := range keys {
+		tmpImageName := imageName
 		go func() {
 			defer func() {
 				g.ProcessLimit <- 1
 				processWg.Done()
 			}()
-			g.Process(imageName)
+			select {
+			case <-g.ProcessLimit:
+				g.Process(tmpImageName)
+			}
 		}()
 	}
 
@@ -145,6 +149,7 @@ func (g *Gcr) Monitor() {
 			processSum := len(gcrImages)
 
 			logrus.Infof("Gcr images: %d    Registry images: %d    Waiting process: %d", gcrSum, regSum, processSum)
+			logrus.Infoln(gcrImages)
 		}
 	}
 
