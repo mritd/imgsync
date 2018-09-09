@@ -33,7 +33,7 @@ import (
 
 var debug, test, monitor bool
 var proxy, dockerUser, dockerPassword, nameSpace string
-var queryLimit, processLimit int
+var queryLimit, processLimit, monitorCount int
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -59,7 +59,7 @@ A docker image sync tool for Google container registry (gcr.io).`,
 		if !monitor {
 			gcr.Sync()
 		} else {
-			gcr.Monitor()
+			gcr.Monitor(monitorCount)
 		}
 	},
 }
@@ -75,6 +75,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug mode")
 	rootCmd.PersistentFlags().BoolVar(&test, "test", false, "run test mode(only write changelog)")
 	rootCmd.PersistentFlags().BoolVar(&monitor, "monitor", false, "monitor images sync detail")
+	rootCmd.PersistentFlags().IntVar(&monitorCount, "monitorcount", -1, "monitor count")
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")

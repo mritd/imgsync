@@ -126,31 +126,43 @@ func (g *Gcr) Sync() {
 
 }
 
-func (g *Gcr) Monitor() {
+func (g *Gcr) Monitor(count int) {
 
-	for {
-		select {
-		case <-time.Tick(5 * time.Second):
-			gcrImages := g.gcrImageList()
-			regImages := g.regImageList()
-
-			gcrSum := len(gcrImages)
-			regSum := len(regImages)
-
-			logrus.Debugf("Google container registry images total: %d", gcrSum)
-			logrus.Debugf("Docker registry images total: %d", regSum)
-
-			for _, imageName := range regImages {
-				if gcrImages[imageName] {
-					delete(gcrImages, imageName)
-				}
-			}
-
-			processSum := len(gcrImages)
-
-			logrus.Infof("Gcr images: %d    Registry images: %d    Waiting process: %d", gcrSum, regSum, processSum)
-			logrus.Infoln(gcrImages)
+	if count == -1 {
+		for {
+			g.monitor()
 		}
+	} else {
+		for i := 0; i < count; {
+			g.monitor()
+		}
+	}
+
+}
+
+func (g *Gcr) monitor() {
+
+	select {
+	case <-time.Tick(5 * time.Second):
+		gcrImages := g.gcrImageList()
+		regImages := g.regImageList()
+
+		gcrSum := len(gcrImages)
+		regSum := len(regImages)
+
+		logrus.Debugf("Google container registry images total: %d", gcrSum)
+		logrus.Debugf("Docker registry images total: %d", regSum)
+
+		for _, imageName := range regImages {
+			if gcrImages[imageName] {
+				delete(gcrImages, imageName)
+			}
+		}
+
+		processSum := len(gcrImages)
+
+		logrus.Infof("Gcr images: %d    Registry images: %d    Waiting process: %d", gcrSum, regSum, processSum)
+		logrus.Infoln(gcrImages)
 	}
 
 }
