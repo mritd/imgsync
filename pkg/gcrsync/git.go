@@ -26,10 +26,14 @@ func (g *Gcr) Commit(updateInfo string) {
 	utils.CheckAndExit(err)
 	defer chgLog.Close()
 	chgLog.WriteString(updateInfo + string(content))
-	utils.MustExec("git", "--git-dir="+repoDir+".git", "--force", g.commitURL)
+	utils.GitCmd(repoDir, "config", "--global", "push.default", "simple")
+	utils.GitCmd(repoDir, "add", ChangeLog)
+	utils.GitCmd(repoDir, "commit", "-m", g.CommitMsg)
+	utils.GitCmd(repoDir, "push", "--force", g.commitURL, "master")
 
 }
 
 func (g *Gcr) Clone() {
-	utils.MustExec("git", "clone", g.commitURL)
+	os.RemoveAll(strings.Split(g.GithubRepo, "/")[1])
+	utils.GitCmd("", "clone", g.commitURL)
 }
