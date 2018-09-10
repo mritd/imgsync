@@ -39,37 +39,29 @@ const (
 	GcrRegistryTpl = "gcr.io/%s/%s"
 	GcrImages      = "https://gcr.io/v2/%s/tags/list"
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
-	HubLogin       = "https://hub.docker.com/v2/users/login"
-	HubRepos       = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	HubTags        = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	RegistryTag    = "https://hub.docker.com/v2/repositories/%s/%s/tags/%s/"
 )
 
 func (g *Gcr) Sync() {
+	if g.MonitorMode {
+		g.monitor()
+	} else {
+		g.sync()
+	}
+}
+
+func (g *Gcr) sync() {
 
 	gcrImages := g.gcrImageList()
-	regImages := g.regImageList()
+	needSyncImages := g.needProcessImages(gcrImages)
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
-	logrus.Infof("Docker registry images total: %d", len(regImages))
-
-	for _, imageName := range regImages {
-		if gcrImages[imageName] {
-			logrus.Debugf("Image [%s] found, skip!", imageName)
-			delete(gcrImages, imageName)
-		}
-	}
-
-	logrus.Infof("Number of images waiting to be processed: %d", len(gcrImages))
-
-	keys := make([]string, 0, len(gcrImages))
-	for key := range gcrImages {
-		keys = append(keys, key)
-	}
+	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
 
 	processWg := new(sync.WaitGroup)
-	processWg.Add(len(keys))
+	processWg.Add(len(needSyncImages))
 
-	for _, imageName := range keys {
+	for _, imageName := range needSyncImages {
 		tmpImageName := imageName
 		go func() {
 			defer func() {
@@ -117,48 +109,35 @@ func (g *Gcr) Sync() {
 
 }
 
-func (g *Gcr) Monitor(count int) {
-
-	if count == -1 {
-		for {
-			g.monitor()
-		}
-	} else {
-		for i := 0; i < count; i++ {
-			g.monitor()
-		}
-	}
-
-}
-
 func (g *Gcr) monitor() {
 
-	select {
-	case <-time.Tick(5 * time.Second):
-		gcrImages := g.gcrImageList()
-		regImages := g.regImageList()
-
-		gcrSum := len(gcrImages)
-		regSum := len(regImages)
-
-		logrus.Debugf("Google container registry images total: %d", gcrSum)
-		logrus.Debugf("Docker registry images total: %d", regSum)
-
-		for _, imageName := range regImages {
-			if gcrImages[imageName] {
-				delete(gcrImages, imageName)
+	if g.MonitorCount == -1 {
+		for {
+			select {
+			case <-time.Tick(5 * time.Second):
+				gcrImages := g.gcrImageList()
+				needSyncImages := g.needProcessImages(gcrImages)
+				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
 			}
 		}
-
-		processSum := len(gcrImages)
-
-		logrus.Infof("Gcr images: %d    Registry images: %d    Waiting process: %d", gcrSum, regSum, processSum)
-		logrus.Infoln(gcrImages)
+	} else {
+		for i := 0; i < g.MonitorCount; i++ {
+			select {
+			case <-time.Tick(5 * time.Second):
+				gcrImages := g.gcrImageList()
+				needSyncImages := g.needProcessImages(gcrImages)
+				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
+			}
+		}
 	}
 
 }
 
 func (g *Gcr) Init() {
+
+	if g.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	logrus.Infoln("Init http client.")
 	g.httpClient = &http.Client{
@@ -187,12 +166,14 @@ func (g *Gcr) Init() {
 	logrus.Infoln("Init update channel.")
 	g.update = make(chan string, 20)
 
-	logrus.Infoln("Init commit repo.")
-	if g.GithubToken == "" {
-		utils.ErrorExit("Github Token is blank!", 1)
+	if !g.MonitorMode {
+		logrus.Infoln("Init commit repo.")
+		if g.GithubToken == "" {
+			utils.ErrorExit("Github Token is blank!", 1)
+		}
+		g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
+		g.Clone()
 	}
-	g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
-	g.Clone()
 
 	logrus.Infoln("Init success...")
 }

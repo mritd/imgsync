@@ -25,8 +25,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-
 	"github.com/mritd/gcrsync/pkg/gcrsync"
 
 	"github.com/spf13/cobra"
@@ -45,29 +43,24 @@ var rootCmd = &cobra.Command{
 A docker image sync tool for Google container registry (gcr.io).`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if debug {
-			logrus.SetLevel(logrus.DebugLevel)
-		}
-
 		gcr := &gcrsync.Gcr{
 			Proxy:          proxy,
 			DockerUser:     dockerUser,
 			DockerPassword: dockerPassword,
 			NameSpace:      nameSpace,
-			TestMode:       test,
 			QueryLimit:     make(chan int, queryLimit),
 			ProcessLimit:   make(chan int, processLimit),
 			HttpTimeOut:    httpTimeout,
 			GithubRepo:     githubRepo,
 			GithubToken:    githubToken,
 			CommitMsg:      commitMsg,
+			MonitorCount:   monitorCount,
+			MonitorMode:    monitor,
+			TestMode:       test,
+			Debug:          debug,
 		}
 		gcr.Init()
-		if !monitor {
-			gcr.Sync()
-		} else {
-			gcr.Monitor(monitorCount)
-		}
+		gcr.Sync()
 	},
 }
 

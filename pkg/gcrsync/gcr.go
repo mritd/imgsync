@@ -27,7 +27,10 @@ type Gcr struct {
 	GithubToken    string
 	GithubRepo     string
 	CommitMsg      string
+	MonitorCount   int
 	TestMode       bool
+	MonitorMode    bool
+	Debug          bool
 	QueryLimit     chan int
 	ProcessLimit   chan int
 	HttpTimeOut    time.Duration
@@ -38,9 +41,9 @@ type Gcr struct {
 	commitURL      string
 }
 
-func (g *Gcr) gcrImageList() map[string]bool {
+func (g *Gcr) gcrImageList() []string {
 
-	images := make(map[string]bool)
+	var images []string
 	publicImageNames := g.gcrPublicImageNames()
 
 	logrus.Debugf("Number of gcr images: %d", len(publicImageNames))
@@ -87,7 +90,7 @@ func (g *Gcr) gcrImageList() map[string]bool {
 			select {
 			case imageName, ok := <-imgNameCh:
 				if ok {
-					images[imageName] = true
+					images = append(images, imageName)
 				} else {
 					goto imgSetExit
 				}
