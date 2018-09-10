@@ -86,7 +86,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
-	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google_containers", "google container registry namespace")
+	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google-containers", "google container registry namespace")
 	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 50, "http query limit")
 	rootCmd.PersistentFlags().DurationVar(&httpTimeout, "httptimeout", 10*time.Second, "http request timeout")
 	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
