@@ -22,10 +22,9 @@ package gcrsync
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +35,7 @@ import (
 )
 
 const (
+	ChangeLog      = "CHANGELOG.md"
 	GcrRegistryTpl = "gcr.io/%s/%s"
 	GcrImages      = "https://gcr.io/v2/%s/tags/list"
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
@@ -89,13 +89,6 @@ func (g *Gcr) Sync() {
 	go func() {
 		defer chgWg.Done()
 
-		var contents []byte
-		chglog, err := os.Open("CHANGELOG.md")
-		if utils.CheckErr(err) {
-			contents, _ = ioutil.ReadAll(chglog)
-			chglog.Close()
-		}
-
 		var init bool
 		updateInfo := ""
 		for {
@@ -113,11 +106,9 @@ func (g *Gcr) Sync() {
 			}
 		}
 	ChangeLogDone:
-		chglog, err = os.OpenFile("CHANGELOG.md", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-		utils.CheckAndExit(err)
-		defer chglog.Close()
-		newContents := updateInfo + "\n" + string(contents)
-		chglog.WriteString(newContents)
+		if strings.TrimSpace(updateInfo) != "" {
+			g.Commit(updateInfo)
+		}
 	}()
 
 	processWg.Wait()
@@ -167,11 +158,11 @@ func (g *Gcr) monitor() {
 
 }
 
-func (g *Gcr) Init(timeout time.Duration) {
+func (g *Gcr) Init() {
 
 	logrus.Infoln("Init http client.")
 	g.httpClient = &http.Client{
-		Timeout: timeout,
+		Timeout: g.HttpTimeOut,
 	}
 	if g.Proxy != "" {
 		p := func(_ *http.Request) (*url.URL, error) {
@@ -195,6 +186,13 @@ func (g *Gcr) Init(timeout time.Duration) {
 
 	logrus.Infoln("Init update channel.")
 	g.update = make(chan string, 20)
+
+	logrus.Infoln("Init commit repo.")
+	if g.GithubToken == "" {
+		utils.ErrorExit("Github Token is blank!", 1)
+	}
+	g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
+	g.Clone()
 
 	logrus.Infoln("Init success...")
 }

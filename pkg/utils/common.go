@@ -21,7 +21,9 @@
 package utils
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -47,4 +49,35 @@ func ErrorExit(msg string, code int) {
 		code = 1
 	}
 	os.Exit(code)
+}
+
+func MustExec(name string, arg ...string) {
+	cmd := exec.Command(name, arg...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	CheckAndExit(cmd.Run())
+}
+
+func MustExecRtOut(name string, arg ...string) string {
+	cmd := exec.Command(name, arg...)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	b, err := cmd.Output()
+	if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
+	return string(b)
+}
+
+func MustExecNoOut(name string, arg ...string) {
+	cmd := exec.Command(name, arg...)
+	cmd.Stderr = os.Stderr
+	CheckAndExit(cmd.Run())
+}
+
+func TryExec(name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	return cmd.Run()
 }

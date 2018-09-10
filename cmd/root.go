@@ -34,6 +34,7 @@ import (
 
 var debug, test, monitor bool
 var proxy, dockerUser, dockerPassword, nameSpace string
+var githubRepo, githubToken, commitMsg string
 var queryLimit, processLimit, monitorCount int
 var httpTimeout time.Duration
 
@@ -56,8 +57,9 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			TestMode:       test,
 			QueryLimit:     make(chan int, queryLimit),
 			ProcessLimit:   make(chan int, processLimit),
+			HttpTimeOut:    httpTimeout,
 		}
-		gcr.Init(httpTimeout)
+		gcr.Init()
 		if !monitor {
 			gcr.Sync()
 		} else {
@@ -82,7 +84,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
 	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google_containers", "google container registry namespace")
-	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 200, "http query limit")
+	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 50, "http query limit")
 	rootCmd.PersistentFlags().DurationVar(&httpTimeout, "httptimeout", 10*time.Second, "http request timeout")
-	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 5, "image process limit")
+	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
+	rootCmd.PersistentFlags().StringVar(&githubRepo, "githubrepo", "mritd/gcr", "github commit repo")
+	rootCmd.PersistentFlags().StringVar(&githubToken, "githubtoken", "", "github commit token")
+	rootCmd.PersistentFlags().StringVar(&commitMsg, "commitmsg", "Travis CI Auto Synchronized.", "github commit message")
 }

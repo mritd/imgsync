@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/client"
 
@@ -23,13 +24,18 @@ type Gcr struct {
 	DockerUser     string
 	DockerPassword string
 	NameSpace      string
+	GithubToken    string
+	GithubRepo     string
+	CommitMsg      string
 	TestMode       bool
 	QueryLimit     chan int
 	ProcessLimit   chan int
+	HttpTimeOut    time.Duration
 	httpClient     *http.Client
 	dockerClient   *client.Client
 	dockerHubToken string
 	update         chan string
+	commitURL      string
 }
 
 func (g *Gcr) gcrImageList() map[string]bool {
