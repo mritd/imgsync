@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 
@@ -72,9 +71,6 @@ func (g *Gcr) regPublicImageTags(imageNames []string) []string {
 				g.requestRegistryImageTags(fmt.Sprintf(HubTags, g.DockerUser, tmpImageName), &imageTags)
 				for _, tag := range imageTags {
 					imgNameCh <- tmpImageName + ":" + tag
-					f, _ := os.OpenFile("dump", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-					defer f.Close()
-					f.WriteString(tmpImageName + ":" + tag + "\n")
 				}
 			}
 		}()
