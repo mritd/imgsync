@@ -58,6 +58,9 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			QueryLimit:     make(chan int, queryLimit),
 			ProcessLimit:   make(chan int, processLimit),
 			HttpTimeOut:    httpTimeout,
+			GithubRepo:     githubRepo,
+			GithubToken:    githubToken,
+			CommitMsg:      commitMsg,
 		}
 		gcr.Init()
 		if !monitor {
