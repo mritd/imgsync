@@ -133,7 +133,7 @@ func (g *Gcr) Monitor(count int) {
 			g.monitor()
 		}
 	} else {
-		for i := 0; i < count; {
+		for i := 0; i < count; i++ {
 			g.monitor()
 		}
 	}
@@ -167,25 +167,18 @@ func (g *Gcr) monitor() {
 
 }
 
-func (g *Gcr) Init() {
+func (g *Gcr) Init(timeout time.Duration) {
 
 	logrus.Infoln("Init http client.")
-	var httpClient *http.Client
+	g.httpClient = &http.Client{
+		Timeout: timeout,
+	}
 	if g.Proxy != "" {
 		p := func(_ *http.Request) (*url.URL, error) {
 			return url.Parse(g.Proxy)
 		}
-		transport := &http.Transport{Proxy: p}
-		httpClient = &http.Client{
-			Timeout:   5 * time.Second,
-			Transport: transport,
-		}
-	} else {
-		httpClient = &http.Client{
-			Timeout: 5 * time.Second,
-		}
+		g.httpClient.Transport = &http.Transport{Proxy: p}
 	}
-	g.httpClient = httpClient
 
 	logrus.Infoln("Init docker client.")
 	dockerClient, err := client.NewEnvClient()

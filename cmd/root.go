@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 
@@ -34,6 +35,7 @@ import (
 var debug, test, monitor bool
 var proxy, dockerUser, dockerPassword, nameSpace string
 var queryLimit, processLimit, monitorCount int
+var httpTimeout time.Duration
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -55,7 +57,7 @@ A docker image sync tool for Google container registry (gcr.io).`,
 			QueryLimit:     make(chan int, queryLimit),
 			ProcessLimit:   make(chan int, processLimit),
 		}
-		gcr.Init()
+		gcr.Init(httpTimeout)
 		if !monitor {
 			gcr.Sync()
 		} else {
@@ -81,5 +83,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
 	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google_containers", "google container registry namespace")
 	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 200, "http query limit")
+	rootCmd.PersistentFlags().DurationVar(&httpTimeout, "httptimeout", 10*time.Second, "http request timeout")
 	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 5, "image process limit")
 }
