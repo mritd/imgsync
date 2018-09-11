@@ -54,7 +54,8 @@ func (g *Gcr) Commit(images []string) {
 	utils.CheckAndExit(err)
 	defer chgLog.Close()
 
-	updateInfo := fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	updateInfo := fmt.Sprintf("### %s Update:\n\n", time.Now().In(loc).Format("2006-01-02 15:04:05"))
 	for _, imageName := range images {
 		updateInfo += "- " + fmt.Sprintf(GcrRegistryTpl, g.NameSpace, imageName) + "\n"
 	}
