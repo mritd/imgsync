@@ -90,7 +90,7 @@ func (g *Gcr) Sync() {
 			}
 		}
 	ChangeLogDone:
-		if strings.TrimSpace(updateInfo) != "" {
+		if strings.TrimSpace(updateInfo) != "" && !g.TestMode {
 			g.Commit(updateInfo)
 		}
 	}()
