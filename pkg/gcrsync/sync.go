@@ -1,22 +1,24 @@
-// Copyright © 2018 mritd <mritd1234@gmail.com>
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+/*
+ * Copyright © 2018 mritd <mritd1234@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
 package gcrsync
 
@@ -24,9 +26,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/json-iterator/go"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/client"
@@ -123,6 +130,24 @@ func (g *Gcr) Monitor() {
 		}
 	}
 
+}
+
+func (g *Gcr) Compare() {
+	gcrImages := g.gcrImageList()
+	needSyncImages := g.needProcessImages(gcrImages)
+
+	logrus.Infof("Google container registry images total: %d", len(gcrImages))
+	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
+
+	diff := utils.SliceDiff(gcrImages, needSyncImages)
+	sort.Strings(diff)
+	repoDir := strings.Split(g.GithubRepo, "/")[1]
+	f, err := os.OpenFile(filepath.Join(repoDir, g.NameSpace), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	utils.CheckAndExit(err)
+	defer f.Close()
+	b, err := jsoniter.MarshalIndent(diff, "", "    ")
+	utils.CheckAndExit(err)
+	f.Write(b)
 }
 
 func (g *Gcr) Init() {

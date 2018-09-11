@@ -20,44 +20,37 @@
  * THE SOFTWARE.
  */
 
-package gcrsync
+package cmd
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/mritd/gcrsync/pkg/utils"
+	"github.com/mritd/gcrsync/pkg/gcrsync"
+	"github.com/spf13/cobra"
 )
 
-func (g *Gcr) Commit(updateInfo string) {
-
-	repoDir := strings.Split(g.GithubRepo, "/")[1]
-	repoChangeLog := filepath.Join(repoDir, ChangeLog)
-
-	var content []byte
-	chgLog, err := os.Open(repoChangeLog)
-	if utils.CheckErr(err) {
-		defer chgLog.Close()
-		content, err = ioutil.ReadAll(chgLog)
-		utils.CheckAndExit(err)
-	}
-
-	chgLog, err = os.OpenFile(repoChangeLog, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	utils.CheckAndExit(err)
-	defer chgLog.Close()
-	chgLog.WriteString(updateInfo + string(content))
-	utils.GitCmd(repoDir, "config", "--global", "push.default", "simple")
-	utils.GitCmd(repoDir, "config", "--global", "user.email", "gcrsync@mritd.me")
-	utils.GitCmd(repoDir, "config", "--global", "user.name", "gcrsync")
-	utils.GitCmd(repoDir, "add", ChangeLog)
-	utils.GitCmd(repoDir, "commit", "-m", g.CommitMsg)
-	utils.GitCmd(repoDir, "push", "--force", g.commitURL, "master")
-
+var compareCmd = &cobra.Command{
+	Use:   "compare",
+	Short: "Compare gcr registry and private registry",
+	Long: `
+compare gcr registry and private registry.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		gcr := &gcrsync.Gcr{
+			Proxy:          proxy,
+			DockerUser:     dockerUser,
+			DockerPassword: dockerPassword,
+			NameSpace:      nameSpace,
+			QueryLimit:     make(chan int, queryLimit),
+			ProcessLimit:   make(chan int, processLimit),
+			HttpTimeOut:    httpTimeout,
+			GithubRepo:     githubRepo,
+			GithubToken:    githubToken,
+			CommitMsg:      commitMsg,
+			Debug:          debug,
+		}
+		gcr.Init()
+		gcr.Compare()
+	},
 }
 
-func (g *Gcr) Clone() {
-	os.RemoveAll(strings.Split(g.GithubRepo, "/")[1])
-	utils.GitCmd("", "clone", g.commitURL)
+func init() {
+	rootCmd.AddCommand(compareCmd)
 }
