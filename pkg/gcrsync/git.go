@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -68,6 +69,7 @@ func (g *Gcr) Commit(images []string) {
 	}
 	utils.CheckAndExit(jsoniter.Unmarshal(content, &synchronizedImages))
 	synchronizedImages = append(synchronizedImages, images...)
+	sort.Strings(synchronizedImages)
 	buf, err := jsoniter.MarshalIndent(synchronizedImages, "", "    ")
 	utils.CheckAndExit(err)
 	newUpdateFile, err := os.OpenFile(repoUpdateFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
