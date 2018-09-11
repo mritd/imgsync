@@ -43,14 +43,6 @@ const (
 )
 
 func (g *Gcr) Sync() {
-	if g.MonitorMode {
-		g.monitor()
-	} else {
-		g.sync()
-	}
-}
-
-func (g *Gcr) sync() {
 
 	gcrImages := g.gcrImageList()
 	needSyncImages := g.needProcessImages(gcrImages)
@@ -109,7 +101,7 @@ func (g *Gcr) sync() {
 
 }
 
-func (g *Gcr) monitor() {
+func (g *Gcr) Monitor() {
 
 	if g.MonitorCount == -1 {
 		for {
