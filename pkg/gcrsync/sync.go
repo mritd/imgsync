@@ -23,7 +23,6 @@
 package gcrsync
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -52,7 +51,7 @@ const (
 func (g *Gcr) Sync() {
 
 	gcrImages := g.gcrImageList()
-	needSyncImages := g.needProcessImages(gcrImages)
+	needSyncImages := g.compareCache(gcrImages)
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
 	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
@@ -80,25 +79,20 @@ func (g *Gcr) Sync() {
 	go func() {
 		defer chgWg.Done()
 
-		var init bool
-		updateInfo := ""
+		var images []string
 		for {
 			select {
 			case imageName, ok := <-g.update:
 				if ok {
-					if !init {
-						updateInfo += fmt.Sprintf("### %s Update:\n\n", time.Now().Format("2006-01-02 15:04:05"))
-						init = true
-					}
-					updateInfo += "- " + imageName + "\n"
+					images = append(images, imageName)
 				} else {
 					goto ChangeLogDone
 				}
 			}
 		}
 	ChangeLogDone:
-		if strings.TrimSpace(updateInfo) != "" && !g.TestMode {
-			g.Commit(updateInfo)
+		if len(images) > 0 && !g.TestMode {
+			g.Commit(images)
 		}
 	}()
 
@@ -115,7 +109,7 @@ func (g *Gcr) Monitor() {
 			select {
 			case <-time.Tick(5 * time.Second):
 				gcrImages := g.gcrImageList()
-				needSyncImages := g.needProcessImages(gcrImages)
+				needSyncImages := g.compareCache(gcrImages)
 				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
 			}
 		}
@@ -124,7 +118,7 @@ func (g *Gcr) Monitor() {
 			select {
 			case <-time.Tick(5 * time.Second):
 				gcrImages := g.gcrImageList()
-				needSyncImages := g.needProcessImages(gcrImages)
+				needSyncImages := g.compareCache(gcrImages)
 				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
 			}
 		}
@@ -183,14 +177,12 @@ func (g *Gcr) Init() {
 	logrus.Infoln("Init update channel.")
 	g.update = make(chan string, 20)
 
-	if !g.MonitorMode {
-		logrus.Infoln("Init commit repo.")
-		if g.GithubToken == "" {
-			utils.ErrorExit("Github Token is blank!", 1)
-		}
-		g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
-		g.Clone()
+	logrus.Infoln("Init commit repo.")
+	if g.GithubToken == "" {
+		utils.ErrorExit("Github Token is blank!", 1)
 	}
+	g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
+	g.Clone()
 
 	logrus.Infoln("Init success...")
 }

@@ -24,9 +24,14 @@ package gcrsync
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/json-iterator/go"
 
 	"github.com/Sirupsen/logrus"
 
@@ -91,4 +96,18 @@ func (g *Gcr) queryRegistryImage(imageName string) bool {
 	} else {
 		return false
 	}
+}
+
+func (g *Gcr) compareCache(images []string) []string {
+	var cachedImages []string
+	repoDir := strings.Split(g.GithubRepo, "/")[1]
+	f, err := os.Open(filepath.Join(repoDir, g.NameSpace))
+	utils.CheckAndExit(err)
+	defer f.Close()
+	b, err := ioutil.ReadAll(f)
+	utils.CheckAndExit(err)
+	jsoniter.Unmarshal(b, &cachedImages)
+	logrus.Infof("Cached images total: %d", len(cachedImages))
+
+	return utils.SliceDiff(images, cachedImages)
 }
