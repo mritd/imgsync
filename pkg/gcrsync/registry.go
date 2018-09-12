@@ -61,10 +61,14 @@ func (g *Gcr) needProcessImages(images []string) []string {
 		}()
 	}
 
+	var imgReceiveWg sync.WaitGroup
+	imgReceiveWg.Add(1)
 	go func() {
+		defer imgReceiveWg.Done()
 		for {
 			select {
 			case imageName, ok := <-imgNameCh:
+				logrus.Debugf("query: %s", imageName)
 				if ok {
 					needSyncImages = append(needSyncImages, imageName)
 				} else {
@@ -77,6 +81,7 @@ func (g *Gcr) needProcessImages(images []string) []string {
 
 	imgGetWg.Wait()
 	close(imgNameCh)
+	imgReceiveWg.Wait()
 	return needSyncImages
 
 }

@@ -107,7 +107,10 @@ func (g *Gcr) gcrImageList() []string {
 		}()
 	}
 
+	var imgReceiveWg sync.WaitGroup
+	imgReceiveWg.Add(1)
 	go func() {
+		defer imgReceiveWg.Done()
 		for {
 			select {
 			case imageName, ok := <-imgNameCh:
@@ -123,7 +126,7 @@ func (g *Gcr) gcrImageList() []string {
 
 	imgGetWg.Wait()
 	close(imgNameCh)
-
+	imgReceiveWg.Wait()
 	return images
 }
 
