@@ -68,7 +68,6 @@ func (g *Gcr) needProcessImages(images []string) []string {
 		for {
 			select {
 			case imageName, ok := <-imgNameCh:
-				logrus.Debugf("query: %s", imageName)
 				if ok {
 					needSyncImages = append(needSyncImages, imageName)
 				} else {
