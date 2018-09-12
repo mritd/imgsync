@@ -17,5 +17,5 @@ script:
   - gcrsync sync --namespace kubernetes-helm --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
   - gcrsync sync --namespace istio-release --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
   - gcrsync sync --namespace linkerd-io --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
-  - gcrsync sync --namespace spinnaker-marketplace --querylimit 20 --processlimit --httptimeout 10s 10 --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
+  - gcrsync sync --namespace spinnaker-marketplace --querylimit 20 --processlimit --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
   - gcrsync sync --namespace distroless --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
