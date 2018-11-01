@@ -31,9 +31,9 @@ import (
 
 	"github.com/docker/docker/client"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/pkg/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type Image struct {

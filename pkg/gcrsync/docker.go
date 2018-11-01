@@ -31,7 +31,7 @@ import (
 
 	"github.com/json-iterator/go"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/mritd/gcrsync/pkg/utils"
 

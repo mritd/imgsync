@@ -26,7 +26,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func CheckErr(err error) bool {
