@@ -38,7 +38,7 @@ import (
 	"github.com/mritd/gcrsync/pkg/utils"
 )
 
-func (g *Gcr) needProcessImages(images []string) []string {
+func (g *Gcr) filterImages(images []string) []string {
 	var needSyncImages []string
 	var imgGetWg sync.WaitGroup
 	imgGetWg.Add(len(images))
@@ -54,7 +54,7 @@ func (g *Gcr) needProcessImages(images []string) []string {
 
 			select {
 			case <-g.QueryLimit:
-				if !g.queryRegistryImage(tmpImageName) {
+				if !g.checkRegistryImageExist(tmpImageName) {
 					imgNameCh <- tmpImageName
 				}
 			}
@@ -85,7 +85,7 @@ func (g *Gcr) needProcessImages(images []string) []string {
 
 }
 
-func (g *Gcr) queryRegistryImage(imageName string) bool {
+func (g *Gcr) checkRegistryImageExist(imageName string) bool {
 	imageInfo := strings.Split(imageName, ":")
 	addr := fmt.Sprintf(RegistryTag, g.DockerUser, imageInfo[0], imageInfo[1])
 	req, _ := http.NewRequest("GET", addr, nil)
@@ -93,7 +93,9 @@ func (g *Gcr) queryRegistryImage(imageName string) bool {
 	if !utils.CheckErr(err) {
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode == http.StatusOK {
 		logrus.Debugf("Image [%s] found, skip!", imageName)
 		return true
@@ -114,4 +116,21 @@ func (g *Gcr) compareCache(images []string) []string {
 	logrus.Infof("Cached images total: %d", len(cachedImages))
 
 	return utils.SliceDiff(images, cachedImages)
+}
+
+func (g *Gcr) getRegistryImages() []string {
+	var images []string
+	addr := fmt.Sprintf(RegistryImage, g.DockerUser)
+	for {
+		req, _ := http.NewRequest("GET", addr, nil)
+		resp, err := g.httpClient.Do(req)
+		utils.CheckAndExit(err)
+		if resp.StatusCode == http.StatusOK {
+			utils.ErrorExit("Get docker hub images failed!", 1)
+		}
+
+		b, err := ioutil.ReadAll(resp.Body)
+		utils.CheckAndExit(err)
+
+	}
 }

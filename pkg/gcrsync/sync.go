@@ -45,6 +45,7 @@ const (
 	GcrRegistryTpl = "gcr.io/%s/%s"
 	GcrImages      = "https://gcr.io/v2/%s/tags/list"
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
+	RegistryImage  = "https://hub.docker.com/v2/repositories/%s/"
 	RegistryTag    = "https://hub.docker.com/v2/repositories/%s/%s/tags/%s/"
 )
 
@@ -128,7 +129,7 @@ func (g *Gcr) Monitor() {
 
 func (g *Gcr) Compare() {
 	gcrImages := g.gcrImageList()
-	needSyncImages := g.needProcessImages(gcrImages)
+	needSyncImages := g.filterImages(gcrImages)
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
 	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
