@@ -158,7 +158,7 @@ func (g *Gcr) Init() {
 	}
 
 	logrus.Infoln("Init docker client.")
-	dockerClient, err := client.NewEnvClient()
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
 	utils.CheckAndExit(err)
 	g.dockerClient = dockerClient
 

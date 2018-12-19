@@ -44,7 +44,7 @@ func (g *Gcr) Process(imageName string) {
 
 	ctx := context.Background()
 	oldImageName := fmt.Sprintf(GcrRegistryTpl, g.NameSpace, imageName)
-	newImageName := g.DockerUser + "/" + imageName
+	newImageName := "docker.io/" + g.DockerUser + "/" + imageName
 
 	if !g.TestMode {
 
