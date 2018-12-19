@@ -94,7 +94,7 @@ func (g *Gcr) Sync() {
 			}
 		}
 	ChangeLogDone:
-		if len(images) > 0 && !g.TestMode {
+		if len(images) > 0 {
 			g.Commit(images)
 		}
 	}()

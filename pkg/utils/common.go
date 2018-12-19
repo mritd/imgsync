@@ -40,6 +40,7 @@ func CheckErr(err error) bool {
 
 func CheckAndExit(err error) {
 	if !CheckErr(err) {
+		panic(err)
 		os.Exit(1)
 	}
 }

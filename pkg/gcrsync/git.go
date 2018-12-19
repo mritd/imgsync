@@ -61,7 +61,9 @@ func (g *Gcr) Commit(images []string) {
 	utils.GitCmd(repoDir, "config", "--global", "user.name", "gcrsync")
 	utils.GitCmd(repoDir, "add", ".")
 	utils.GitCmd(repoDir, "commit", "-m", g.CommitMsg)
-	utils.GitCmd(repoDir, "push", "--force", g.commitURL, "master")
+	if !g.TestMode {
+		utils.GitCmd(repoDir, "push", "--force", g.commitURL, "master")
+	}
 
 }
 

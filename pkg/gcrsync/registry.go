@@ -91,9 +91,9 @@ func (g *Gcr) dockerHubImageList() []string {
 
 			addr := fmt.Sprintf(DockerHubTags, g.DockerUser, tmpImageName)
 
-			for {
-				select {
-				case <-g.QueryLimit:
+			select {
+			case <-g.QueryLimit:
+				for {
 					req, err := http.NewRequest("GET", addr, nil)
 					utils.CheckAndExit(err)
 
