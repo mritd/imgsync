@@ -12,7 +12,6 @@ go:
   - 1.11.x
 
 script:
-  - echo ${DOCKER_PASSWORD} | base64
   - GO111MODULE=on go get github.com/mritd/gcrsync
   - gcrsync sync --namespace google-containers --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
   - gcrsync sync --namespace kubernetes-helm --querylimit 20 --processlimit 10 --httptimeout 10s --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --githubtoken ${GITHUB_TOKEN}
