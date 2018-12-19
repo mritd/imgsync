@@ -8,6 +8,7 @@ A docker image sync tool for Google container registry (gcr.io)
 可自行 build:
 
 ```bash
+export GO111MODULE=on
 go get github.com/mritd/gcrsync
 ```
 
@@ -21,7 +22,6 @@ Usage:
   gcrsync [command]
 
 Available Commands:
-  compare     Compare gcr registry and private registry
   help        Help about any command
   monitor     Monitor sync images
   sync        Sync gcr images
@@ -38,14 +38,11 @@ Flags:
       --processlimit int       image process limit (default 10)
       --proxy string           http client proxy
       --querylimit int         http query limit (default 50)
+      --synctimeout duration   sync timeout
       --user string            docker registry user
 
 Use "gcrsync [command] --help" for more information about a command.
 ```
-
-### compare 命令
-
-该命令用于对比 Docker Hub 指定用户镜像与 `gcr.io` 指定 namesapce 下的镜像差异，同时生成已经同步的 json 文件
 
 ### monitor 命令
 
@@ -57,11 +54,10 @@ Use "gcrsync [command] --help" for more information about a command.
 
 - 首先使用 `--githubtoken` 给定的 token 克隆 `--githubrepo` 给定的仓库到本地(这个仓库应当为元数据仓库)
 - 获取 `gcr.io` 下由 `--namespace` 给定命名空间下的所有镜像
-- 读取克隆的元数据仓库内对应的命名空间文件
+- 获取 `docker hub` 中 `--user` 指定用户下所有镜像
 - 对比两者差异，得出待同步镜像
 - 执行 `pull`、`tag`、`push` 操作，将其推送到由 `--user` 给定的 Docker Hub 用户仓库中
-- 追加元数据仓库内对应的命名空间 json 文件
-- 生成 CHANGELOG.md 并推送元数据仓库到远程
+- 生成 CHANGELOG 并推送元数据仓库到远程
 
 ### test 命令
 

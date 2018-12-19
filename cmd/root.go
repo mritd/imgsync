@@ -27,16 +27,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/mritd/gcrsync/pkg/gcrsync"
-
 	"github.com/spf13/cobra"
 )
 
-var debug, test bool
+var debug bool
 var proxy, dockerUser, dockerPassword, nameSpace string
 var githubRepo, githubToken string
 var queryLimit, processLimit, monitorCount int
-var httpTimeout time.Duration
+var httpTimeOut, syncTimeOut time.Duration
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -44,23 +42,7 @@ var rootCmd = &cobra.Command{
 	Long: `
 A docker image sync tool for Google container registry (gcr.io).`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		gcr := &gcrsync.Gcr{
-			Proxy:          proxy,
-			DockerUser:     dockerUser,
-			DockerPassword: dockerPassword,
-			NameSpace:      nameSpace,
-			QueryLimit:     make(chan int, queryLimit),
-			ProcessLimit:   make(chan int, processLimit),
-			HttpTimeOut:    httpTimeout,
-			GithubRepo:     githubRepo,
-			GithubToken:    githubToken,
-			MonitorCount:   monitorCount,
-			TestMode:       test,
-			Debug:          debug,
-		}
-		gcr.Init()
-		gcr.Sync()
+		_ = cmd.Help()
 	},
 }
 
@@ -78,7 +60,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
 	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google-containers", "google container registry namespace")
 	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 50, "http query limit")
-	rootCmd.PersistentFlags().DurationVar(&httpTimeout, "httptimeout", 10*time.Second, "http request timeout")
+	rootCmd.PersistentFlags().DurationVar(&httpTimeOut, "httptimeout", 10*time.Second, "http request timeout")
+	rootCmd.PersistentFlags().DurationVar(&syncTimeOut, "synctimeout", 0, "sync timeout")
 	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
 	rootCmd.PersistentFlags().StringVar(&githubRepo, "githubrepo", "mritd/gcr", "github commit repo")
 	rootCmd.PersistentFlags().StringVar(&githubToken, "githubtoken", "", "github commit token")

@@ -52,7 +52,7 @@ type Gcr struct {
 	MonitorCount   int
 	TestMode       bool
 	Debug          bool
-	TravisCI       bool
+	SyncTimeOut    time.Duration
 	QueryLimit     chan int
 	ProcessLimit   chan int
 	HttpTimeOut    time.Duration

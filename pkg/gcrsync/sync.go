@@ -56,6 +56,15 @@ func (g *Gcr) Sync() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	go func() {
+		if g.SyncTimeOut != 0 {
+			select {
+			case <-time.After(g.SyncTimeOut):
+				cancel()
+			}
+		}
+	}()
+
 	processWg := new(sync.WaitGroup)
 	processWg.Add(len(needSyncImages))
 
@@ -98,15 +107,6 @@ func (g *Gcr) Sync() {
 			g.Commit(images)
 		}
 	}()
-
-	if g.TravisCI {
-		go func() {
-			select {
-			case <-time.After(30. * time.Minute):
-				cancel()
-			}
-		}()
-	}
 
 	processWg.Wait()
 	close(g.update)
