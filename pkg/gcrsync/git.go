@@ -24,59 +24,37 @@ package gcrsync
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
-
-	"github.com/json-iterator/go"
 
 	"github.com/mritd/gcrsync/pkg/utils"
 )
 
 func (g *Gcr) Commit(images []string) {
 
-	repoDir := strings.Split(g.GithubRepo, "/")[1]
-	repoChangeLog := filepath.Join(repoDir, ChangeLog)
-	repoUpdateFile := filepath.Join(repoDir, g.NameSpace)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
 
-	var content []byte
-	chgLog, err := os.Open(repoChangeLog)
-	if utils.CheckErr(err) {
-		defer chgLog.Close()
-		content, err = ioutil.ReadAll(chgLog)
-		utils.CheckAndExit(err)
+	repoDir := filepath.Join(strings.Split(g.GithubRepo, "/")[1], "changelog")
+	if _, err := os.Stat(repoDir); err != nil {
+		_ = os.MkdirAll(repoDir, 0755)
 	}
 
-	chgLog, err = os.OpenFile(repoChangeLog, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	utils.CheckAndExit(err)
-	defer chgLog.Close()
+	repoChangeLog := filepath.Join(repoDir, fmt.Sprintf(ChangeLog, time.Now().In(loc).Format("2006-01-02")))
 
-	loc, _ := time.LoadLocation("Asia/Shanghai")
+	var content []byte
+	chgLog, err := os.OpenFile(repoChangeLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	utils.CheckAndExit(err)
+	defer func() {
+		_ = chgLog.Close()
+	}()
+
 	updateInfo := fmt.Sprintf("### %s Update:\n\n", time.Now().In(loc).Format("2006-01-02 15:04:05"))
 	for _, imageName := range images {
 		updateInfo += "- " + fmt.Sprintf(GcrRegistryTpl, g.NameSpace, imageName) + "\n"
 	}
-	chgLog.WriteString(updateInfo + string(content))
-
-	var synchronizedImages []string
-	updateFile, err := os.Open(repoUpdateFile)
-	if utils.CheckErr(err) {
-		defer updateFile.Close()
-		content, err = ioutil.ReadAll(updateFile)
-		utils.CheckAndExit(err)
-	}
-	utils.CheckAndExit(jsoniter.Unmarshal(content, &synchronizedImages))
-	synchronizedImages = append(synchronizedImages, images...)
-	sort.Strings(synchronizedImages)
-	buf, err := jsoniter.MarshalIndent(synchronizedImages, "", "    ")
-	utils.CheckAndExit(err)
-	newUpdateFile, err := os.OpenFile(repoUpdateFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	utils.CheckAndExit(err)
-	defer newUpdateFile.Close()
-	newUpdateFile.Write(buf)
+	_, _ = chgLog.WriteString(updateInfo + string(content))
 
 	utils.GitCmd(repoDir, "config", "--global", "push.default", "simple")
 	utils.GitCmd(repoDir, "config", "--global", "user.email", "gcrsync@mritd.me")
@@ -88,6 +66,6 @@ func (g *Gcr) Commit(images []string) {
 }
 
 func (g *Gcr) Clone() {
-	os.RemoveAll(strings.Split(g.GithubRepo, "/")[1])
+	_ = os.RemoveAll(strings.Split(g.GithubRepo, "/")[1])
 	utils.GitCmd("", "clone", g.commitURL)
 }

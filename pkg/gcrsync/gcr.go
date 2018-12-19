@@ -51,8 +51,8 @@ type Gcr struct {
 	CommitMsg      string
 	MonitorCount   int
 	TestMode       bool
-	MonitorMode    bool
 	Debug          bool
+	TravisCI       bool
 	QueryLimit     chan int
 	ProcessLimit   chan int
 	HttpTimeOut    time.Duration

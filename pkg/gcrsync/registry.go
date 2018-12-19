@@ -26,9 +26,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/json-iterator/go"
@@ -38,26 +35,91 @@ import (
 	"github.com/mritd/gcrsync/pkg/utils"
 )
 
-func (g *Gcr) filterImages(images []string) []string {
-	var needSyncImages []string
-	var imgGetWg sync.WaitGroup
-	imgGetWg.Add(len(images))
-	imgNameCh := make(chan string, 20)
+func (g *Gcr) dockerHubImages() []string {
+	var images []string
+	var val []struct {
+		Name string
+	}
+	addr := fmt.Sprintf(DockerHubImage, g.DockerUser)
+	for {
+		req, _ := http.NewRequest("GET", addr, nil)
+		resp, err := g.httpClient.Do(req)
+		utils.CheckAndExit(err)
+		if resp.StatusCode != http.StatusOK {
+			utils.ErrorExit("Get docker hub images failed!", 1)
+		}
 
-	for _, imageName := range images {
+		b, err := ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		utils.CheckAndExit(err)
+
+		_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "results").ToString(), &val)
+
+		for _, v := range val {
+			images = append(images, v.Name)
+		}
+
+		addr = jsoniter.Get(b, "next").ToString()
+		if addr == "" {
+			break
+		}
+
+	}
+	return images
+}
+
+func (g *Gcr) dockerHubImageList() []string {
+
+	var images []string
+	dockerHubImages := g.dockerHubImages()
+
+	logrus.Debugf("Number of docker hub images: %d", len(dockerHubImages))
+
+	imgNameCh := make(chan string, 20)
+	imgGetWg := new(sync.WaitGroup)
+	imgGetWg.Add(len(dockerHubImages))
+
+	for _, imageName := range dockerHubImages {
+
 		tmpImageName := imageName
+
 		go func() {
 			defer func() {
 				g.QueryLimit <- 1
 				imgGetWg.Done()
 			}()
 
-			select {
-			case <-g.QueryLimit:
-				if !g.checkRegistryImageExist(tmpImageName) {
-					imgNameCh <- tmpImageName
+			addr := fmt.Sprintf(DockerHubTags, g.DockerUser, tmpImageName)
+
+			for {
+				select {
+				case <-g.QueryLimit:
+					req, err := http.NewRequest("GET", addr, nil)
+					utils.CheckAndExit(err)
+
+					resp, err := g.httpClient.Do(req)
+					utils.CheckAndExit(err)
+
+					b, err := ioutil.ReadAll(resp.Body)
+					utils.CheckAndExit(err)
+					_ = resp.Body.Close()
+
+					var val []struct {
+						Name string
+					}
+					_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "results").ToString(), &val)
+
+					for _, tag := range val {
+						imgNameCh <- tmpImageName + ":" + tag.Name
+					}
+
+					addr = jsoniter.Get(b, "next").ToString()
+					if addr == "" {
+						break
+					}
 				}
 			}
+
 		}()
 	}
 
@@ -69,7 +131,7 @@ func (g *Gcr) filterImages(images []string) []string {
 			select {
 			case imageName, ok := <-imgNameCh:
 				if ok {
-					needSyncImages = append(needSyncImages, imageName)
+					images = append(images, imageName)
 				} else {
 					goto imgSetExit
 				}
@@ -81,56 +143,6 @@ func (g *Gcr) filterImages(images []string) []string {
 	imgGetWg.Wait()
 	close(imgNameCh)
 	imgReceiveWg.Wait()
-	return needSyncImages
+	return images
 
-}
-
-func (g *Gcr) checkRegistryImageExist(imageName string) bool {
-	imageInfo := strings.Split(imageName, ":")
-	addr := fmt.Sprintf(RegistryTag, g.DockerUser, imageInfo[0], imageInfo[1])
-	req, _ := http.NewRequest("GET", addr, nil)
-	resp, err := g.httpClient.Do(req)
-	if !utils.CheckErr(err) {
-		return false
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	if resp.StatusCode == http.StatusOK {
-		logrus.Debugf("Image [%s] found, skip!", imageName)
-		return true
-	} else {
-		return false
-	}
-}
-
-func (g *Gcr) compareCache(images []string) []string {
-	var cachedImages []string
-	repoDir := strings.Split(g.GithubRepo, "/")[1]
-	f, err := os.Open(filepath.Join(repoDir, g.NameSpace))
-	utils.CheckAndExit(err)
-	defer f.Close()
-	b, err := ioutil.ReadAll(f)
-	utils.CheckAndExit(err)
-	jsoniter.Unmarshal(b, &cachedImages)
-	logrus.Infof("Cached images total: %d", len(cachedImages))
-
-	return utils.SliceDiff(images, cachedImages)
-}
-
-func (g *Gcr) getRegistryImages() []string {
-	var images []string
-	addr := fmt.Sprintf(RegistryImage, g.DockerUser)
-	for {
-		req, _ := http.NewRequest("GET", addr, nil)
-		resp, err := g.httpClient.Do(req)
-		utils.CheckAndExit(err)
-		if resp.StatusCode == http.StatusOK {
-			utils.ErrorExit("Get docker hub images failed!", 1)
-		}
-
-		b, err := ioutil.ReadAll(resp.Body)
-		utils.CheckAndExit(err)
-
-	}
 }

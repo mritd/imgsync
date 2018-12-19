@@ -23,16 +23,11 @@
 package gcrsync
 
 import (
+	"context"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 	"time"
-
-	"github.com/json-iterator/go"
 
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
@@ -41,22 +36,26 @@ import (
 )
 
 const (
-	ChangeLog      = "CHANGELOG.md"
+	ChangeLog      = "CHANGELOG-%s.md"
 	GcrRegistryTpl = "gcr.io/%s/%s"
 	GcrImages      = "https://gcr.io/v2/%s/tags/list"
 	GcrImageTags   = "https://gcr.io/v2/%s/%s/tags/list"
-	RegistryImage  = "https://hub.docker.com/v2/repositories/%s/"
-	RegistryTag    = "https://hub.docker.com/v2/repositories/%s/%s/tags/%s/"
+	DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
+	DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 )
 
 func (g *Gcr) Sync() {
 
 	gcrImages := g.gcrImageList()
-	needSyncImages := g.compareCache(gcrImages)
+	dockerHubImages := g.dockerHubImageList()
+	needSyncImages := utils.SliceDiff(gcrImages, dockerHubImages)
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
+	logrus.Infof("Docker hub images total: %d", len(dockerHubImages))
 	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	processWg := new(sync.WaitGroup)
 	processWg.Add(len(needSyncImages))
 
@@ -70,6 +69,7 @@ func (g *Gcr) Sync() {
 			select {
 			case <-g.ProcessLimit:
 				g.Process(tmpImageName)
+			case <-ctx.Done():
 			}
 		}()
 	}
@@ -89,6 +89,8 @@ func (g *Gcr) Sync() {
 				} else {
 					goto ChangeLogDone
 				}
+			case <-ctx.Done():
+				goto ChangeLogDone
 			}
 		}
 	ChangeLogDone:
@@ -96,6 +98,15 @@ func (g *Gcr) Sync() {
 			g.Commit(images)
 		}
 	}()
+
+	if g.TravisCI {
+		go func() {
+			select {
+			case <-time.After(30. * time.Minute):
+				cancel()
+			}
+		}()
+	}
 
 	processWg.Wait()
 	close(g.update)
@@ -110,8 +121,9 @@ func (g *Gcr) Monitor() {
 			select {
 			case <-time.Tick(5 * time.Second):
 				gcrImages := g.gcrImageList()
-				needSyncImages := g.compareCache(gcrImages)
-				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
+				dockerHubImages := g.dockerHubImageList()
+				needSyncImages := utils.SliceDiff(gcrImages, dockerHubImages)
+				logrus.Infof("Gcr images: %d | Docker hub images: %d | Waiting process: %d", len(gcrImages), len(dockerHubImages), len(needSyncImages))
 			}
 		}
 	} else {
@@ -119,30 +131,13 @@ func (g *Gcr) Monitor() {
 			select {
 			case <-time.Tick(5 * time.Second):
 				gcrImages := g.gcrImageList()
-				needSyncImages := g.compareCache(gcrImages)
-				logrus.Infof("Gcr images: %d    Waiting process: %d", len(gcrImages), len(needSyncImages))
+				dockerHubImages := g.dockerHubImageList()
+				needSyncImages := utils.SliceDiff(gcrImages, dockerHubImages)
+				logrus.Infof("Gcr images: %d | Docker hub images: %d | Waiting process: %d", len(gcrImages), len(dockerHubImages), len(needSyncImages))
 			}
 		}
 	}
 
-}
-
-func (g *Gcr) Compare() {
-	gcrImages := g.gcrImageList()
-	needSyncImages := g.filterImages(gcrImages)
-
-	logrus.Infof("Google container registry images total: %d", len(gcrImages))
-	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
-
-	diff := utils.SliceDiff(gcrImages, needSyncImages)
-	sort.Strings(diff)
-	repoDir := strings.Split(g.GithubRepo, "/")[1]
-	f, err := os.OpenFile(filepath.Join(repoDir, g.NameSpace), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	utils.CheckAndExit(err)
-	defer f.Close()
-	b, err := jsoniter.MarshalIndent(diff, "", "    ")
-	utils.CheckAndExit(err)
-	f.Write(b)
 }
 
 func (g *Gcr) Init() {
