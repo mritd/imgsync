@@ -51,8 +51,8 @@ type Gcr struct {
 	CommitMsg      string
 	MonitorCount   int
 	TestMode       bool
-	MonitorMode    bool
 	Debug          bool
+	TravisCI       bool
 	QueryLimit     chan int
 	ProcessLimit   chan int
 	HttpTimeOut    time.Duration
@@ -94,10 +94,10 @@ func (g *Gcr) gcrImageList() []string {
 
 				b, err := ioutil.ReadAll(resp.Body)
 				utils.CheckAndExit(err)
-				resp.Body.Close()
+				_ = resp.Body.Close()
 
 				var tags []string
-				jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
+				_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
 
 				for _, tag := range tags {
 					imgNameCh <- tmpImageName + ":" + tag
@@ -137,12 +137,14 @@ func (g *Gcr) gcrPublicImageNames() []string {
 
 	resp, err := g.httpClient.Do(req)
 	utils.CheckAndExit(err)
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	b, err := ioutil.ReadAll(resp.Body)
 	utils.CheckAndExit(err)
 
 	var imageNames []string
-	jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &imageNames)
+	_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &imageNames)
 	return imageNames
 }

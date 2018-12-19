@@ -54,8 +54,8 @@ func (g *Gcr) Process(imageName string) {
 			logrus.Errorf("Failed to pull image: %s", oldImageName)
 			return
 		}
-		io.Copy(ioutil.Discard, r)
-		r.Close()
+		_, _ = io.Copy(ioutil.Discard, r)
+		_ = r.Close()
 		logrus.Infof("Pull image: %s success.", oldImageName)
 
 		// tag it
@@ -82,13 +82,13 @@ func (g *Gcr) Process(imageName string) {
 			logrus.Errorf("Failed to push image: %s", newImageName)
 			return
 		}
-		io.Copy(ioutil.Discard, r)
-		r.Close()
+		_, _ = io.Copy(ioutil.Discard, r)
+		_ = r.Close()
 		logrus.Infof("Push image: %s success.", newImageName)
 
 		// clean image
-		g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
-		g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
+		_, _ = g.dockerClient.ImageRemove(ctx, oldImageName, types.ImageRemoveOptions{})
+		_, _ = g.dockerClient.ImageRemove(ctx, newImageName, types.ImageRemoveOptions{})
 		logrus.Debugf("Remove image: %s success.", oldImageName)
 
 	}
