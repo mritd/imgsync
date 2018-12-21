@@ -46,7 +46,7 @@ Use "gcrsync [command] --help" for more information about a command.
 
 ### monitor 命令
 
-该命令与 compare 类似，只不过不生成任何文件，实时在控制台显示对比差异；一般用于监测同步进度
+实时在控制台显示对比差异；一般用于监测同步进度
 
 ### sync 命令
 
