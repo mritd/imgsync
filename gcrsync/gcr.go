@@ -7,9 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/client"
-
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/mritd/gcrsync/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -29,14 +27,11 @@ type Gcr struct {
 	CommitMsg      string
 	MonitorCount   int
 	TestMode       bool
-	Debug          bool
 	SyncTimeOut    time.Duration
 	QueryLimit     chan int
 	ProcessLimit   chan int
 	HttpTimeOut    time.Duration
 	httpClient     *http.Client
-	dockerClient   *client.Client
-	dockerHubToken string
 	update         chan string
 	commitURL      string
 }

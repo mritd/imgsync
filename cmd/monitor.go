@@ -25,7 +25,6 @@ Monitor sync images.`,
 			GithubToken:    githubToken,
 			CommitMsg:      commitMsg,
 			MonitorCount:   monitorCount,
-			Debug:          debug,
 		}
 		gcr.Init()
 		gcr.Monitor()

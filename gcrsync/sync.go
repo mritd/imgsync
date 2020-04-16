@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
 
 	"github.com/mritd/gcrsync/utils"
@@ -25,12 +24,8 @@ const (
 func (g *Gcr) Sync() {
 
 	gcrImages := g.gcrImageList()
-	dockerHubImages := g.dockerHubImageList()
-	needSyncImages := utils.SliceDiff(gcrImages, dockerHubImages)
 
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
-	logrus.Infof("Docker hub images total: %d", len(dockerHubImages))
-	logrus.Infof("Number of images waiting to be processed: %d", len(needSyncImages))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -44,9 +39,9 @@ func (g *Gcr) Sync() {
 	}()
 
 	processWg := new(sync.WaitGroup)
-	processWg.Add(len(needSyncImages))
+	processWg.Add(len(gcrImages))
 
-	for _, imageName := range needSyncImages {
+	for _, imageName := range gcrImages {
 		tmpImageName := imageName
 		go func() {
 			defer func() {
@@ -120,27 +115,19 @@ func (g *Gcr) Monitor() {
 
 func (g *Gcr) Init() {
 
-	if g.Debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-
-	logrus.Infoln("Init http client.")
+	logrus.Infoln("init http client.")
 	g.httpClient = &http.Client{
 		Timeout: g.HttpTimeOut,
 	}
 	if g.Proxy != "" {
-		p := func(_ *http.Request) (*url.URL, error) {
-			return url.Parse(g.Proxy)
+		g.httpClient.Transport = &http.Transport{
+			Proxy: func(_ *http.Request) (*url.URL, error) {
+				return url.Parse(g.Proxy)
+			},
 		}
-		g.httpClient.Transport = &http.Transport{Proxy: p}
 	}
 
-	logrus.Infoln("Init docker client.")
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
-	utils.CheckAndExit(err)
-	g.dockerClient = dockerClient
-
-	logrus.Infoln("Init limit channel.")
+	logrus.Infoln("init limit channel.")
 	for i := 0; i < cap(g.QueryLimit); i++ {
 		g.QueryLimit <- 1
 	}
@@ -148,15 +135,8 @@ func (g *Gcr) Init() {
 		g.ProcessLimit <- 1
 	}
 
-	logrus.Infoln("Init update channel.")
+	logrus.Infoln("init update channel.")
 	g.update = make(chan string, 20)
-
-	logrus.Infoln("Init commit repo.")
-	if g.GithubToken == "" {
-		utils.ErrorExit("Github Token is blank!", 1)
-	}
-	g.commitURL = "https://" + g.GithubToken + "@github.com/" + g.GithubRepo + ".git"
-	g.Clone()
 
 	logrus.Infoln("Init success...")
 }

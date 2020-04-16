@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
@@ -26,12 +26,12 @@ A docker image sync tool for Google container registry (gcr.io).`,
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
 }
 
 func init() {
+	cobra.OnInitialize(initLog)
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug mode")
 	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
 	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
@@ -43,4 +43,15 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
 	rootCmd.PersistentFlags().StringVar(&githubRepo, "githubrepo", "mritd/gcr", "github commit repo")
 	rootCmd.PersistentFlags().StringVar(&githubToken, "githubtoken", "", "github commit token")
+}
+
+func initLog() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+
+	if debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 }

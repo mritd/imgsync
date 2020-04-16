@@ -26,7 +26,6 @@ Sync gcr images.`,
 			GithubRepo:     githubRepo,
 			GithubToken:    githubToken,
 			CommitMsg:      commitMsg,
-			Debug:          debug,
 		}
 		gcr.Init()
 		gcr.Sync()

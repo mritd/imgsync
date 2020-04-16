@@ -25,7 +25,6 @@ Test sync.`,
 			GithubRepo:     githubRepo,
 			GithubToken:    githubToken,
 			CommitMsg:      commitMsg,
-			Debug:          debug,
 			TestMode:       true,
 		}
 		gcr.Init()
