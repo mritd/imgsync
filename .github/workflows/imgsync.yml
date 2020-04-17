@@ -52,6 +52,7 @@ jobs:
 
     - name: Sync flannel images
       env:
+        TZ: Asia/Shanghai
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
@@ -71,6 +72,7 @@ jobs:
 
     - name: Sync k8s.gcr.io images
       env:
+        TZ: Asia/Shanghai
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
