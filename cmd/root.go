@@ -1,17 +1,12 @@
 package cmd
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
 
 var debug bool
-var proxy, dockerUser, dockerPassword, nameSpace string
-var queryLimit, processLimit int
-var httpTimeOut, syncTimeOut time.Duration
 
 var rootCmd = &cobra.Command{
 	Use:   "gcrsync",
@@ -32,14 +27,6 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initLog)
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug mode")
-	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "http client proxy")
-	rootCmd.PersistentFlags().StringVar(&dockerUser, "user", "", "docker registry user")
-	rootCmd.PersistentFlags().StringVar(&dockerPassword, "password", "", "docker registry user password")
-	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google-containers", "google container registry namespace")
-	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 50, "http query limit")
-	rootCmd.PersistentFlags().DurationVar(&httpTimeOut, "httptimeout", 10*time.Second, "http request timeout")
-	rootCmd.PersistentFlags().DurationVar(&syncTimeOut, "synctimeout", 1*time.Hour, "sync timeout")
-	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
 }
 
 func initLog() {

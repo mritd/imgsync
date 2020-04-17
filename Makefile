@@ -4,19 +4,21 @@ COMMIT_SHA1     := $(shell git rev-parse HEAD)
 
 all:
 	gox -osarch="darwin/amd64 linux/386 linux/amd64" \
-        -output="dist/{{.Dir}}_{{.OS}}_{{.Arch}}"
+        -output="dist/{{.Dir}}_{{.OS}}_{{.Arch}}" \
+        -tags="containers_image_openpgp"
 
 release: all
-	ghr -u mritd -t $(GITHUB_RELEASE_TOKEN) -replace -recreate --debug $(version) dist
+	ghr -u mritd -t ${GITHUB_RELEASE_TOKEN} -replace -recreate --debug ${BUILD_VERSION} dist
 
 clean:
 	rm -rf dist
 
 install:
-	go install 
+	go install -tags="containers_image_openpgp"
 
-.PHONY : all release clean install
+.PHONY: all release clean install
 
 .EXPORT_ALL_VARIABLES:
 
 GO111MODULE = on
+GOPROXY = https://goproxy.cn

@@ -13,21 +13,32 @@ import (
 )
 
 type Gcr struct {
-	TestMode       bool
-	Proxy          string
-	NameSpace      string
-	SyncTimeOut    time.Duration
-	HttpTimeOut    time.Duration
-	QueryLimit     int
-	ProcessLimit   int
-	queryLimitCh   chan int
-	processLimitCh chan int
+	NameSpace         string
+	DockerHubUser     string
+	DockerHubPassword string
+	SyncTimeOut       time.Duration
+	HttpTimeOut       time.Duration
+	QueryLimit        int
+	ProcessLimit      int
+	queryLimitCh      chan int
+	processLimitCh    chan int
 }
 
 // init gcr client
-func (g *Gcr) Init() {
+func (g *Gcr) Init() *Gcr {
 
-	logrus.Infoln("init limit channel.")
+	if g.NameSpace == "" {
+		g.NameSpace = "google-containers"
+	}
+
+	if g.SyncTimeOut == 0 {
+		g.SyncTimeOut = 1 * time.Hour
+	}
+
+	if g.HttpTimeOut == 0 {
+		g.HttpTimeOut = 5 * time.Second
+	}
+
 	if g.QueryLimit == 0 {
 		// query limit default 20
 		g.queryLimitCh = make(chan int, 20)
@@ -42,10 +53,18 @@ func (g *Gcr) Init() {
 		g.processLimitCh = make(chan int, g.ProcessLimit)
 	}
 
+	if g.DockerHubUser == "" || g.DockerHubPassword == "" {
+		logrus.Fatal("docker hub user or password is empty")
+	}
+
 	logrus.Infoln("init success...")
+
+	return g
 }
 
 func (g *Gcr) Sync() {
+
+	logrus.Info("starting sync gcr images...")
 
 	gcrImages := g.gcrImageList()
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
@@ -65,7 +84,7 @@ func (g *Gcr) Sync() {
 			}()
 			select {
 			case g.processLimitCh <- 1:
-				g.Process(tmpImage)
+				g.process(tmpImage)
 			case <-ctx.Done():
 			}
 		}()
@@ -95,20 +114,19 @@ func (g *Gcr) gcrImageList() []Image {
 
 			logrus.Infof("get gcr image %s/%s tags.", g.NameSpace, tmpImageName)
 			resp, body, errs := gorequest.New().
-				Proxy(g.Proxy).
 				Timeout(g.HttpTimeOut).
 				Retry(3, 1*time.Second).
 				Get(fmt.Sprintf(GcrImageTagsTpl, g.NameSpace, tmpImageName)).
 				EndBytes()
 			if errs != nil {
-				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, err: %s", g.NameSpace, tmpImageName, errs)
+				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, errs)
 			}
 			defer func() { _ = resp.Body.Close() }()
 
 			var tags []string
 			err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
 			if err != nil {
-				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, err: %s", g.NameSpace, tmpImageName, err)
+				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, err)
 			}
 
 			for _, tag := range tags {
@@ -147,25 +165,32 @@ func (g *Gcr) gcrPublicImageNames() []string {
 	logrus.Info("get gcr public images...")
 
 	resp, body, errs := gorequest.New().
-		Proxy(g.Proxy).
 		Timeout(g.HttpTimeOut).
 		Retry(3, 1*time.Second).
 		Get(fmt.Sprintf(GcrImagesTpl, g.NameSpace)).
 		EndBytes()
 	if errs != nil {
-		logrus.Fatalf("failed to get gcr images, namespace: %s, err: %s", g.NameSpace, errs)
+		logrus.Fatalf("failed to get gcr images, namespace: %s, error: %s", g.NameSpace, errs)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	var imageNames []string
 	err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "child").ToString(), &imageNames)
 	if err != nil {
-		logrus.Fatalf("failed to get gcr images, namespace: %s, err: %s", g.NameSpace, err)
+		logrus.Fatalf("failed to get gcr images, namespace: %s, error: %s", g.NameSpace, err)
 	}
 	logrus.Infof("number of gcr images: %d", len(imageNames))
 	return imageNames
 }
 
-func (g *Gcr) Process(image Image) {
+func (g *Gcr) process(image Image) {
 	logrus.Infof("process image: %s", image)
+	err := syncDockerHub(image, DockerHubOption{
+		Username: g.DockerHubUser,
+		Password: g.DockerHubPassword,
+		Timeout:  10 * time.Minute,
+	})
+	if err != nil {
+		logrus.Errorf("failed to process image %s, error: %s", image, err)
+	}
 }
