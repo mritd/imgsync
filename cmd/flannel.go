@@ -24,7 +24,6 @@ func init() {
 	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubUser, "user", "", "docker hub user")
 	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubPassword, "password", "", "docker hub user password")
 	gcrCmd.PersistentFlags().StringVar(&gcr.NameSpace, "namespace", "google-containers", "google container registry namespace")
-	gcrCmd.PersistentFlags().StringVar(&gcr.Proxy, "proxy", "", "http client proxy")
 	gcrCmd.PersistentFlags().IntVar(&gcr.QueryLimit, "querylimit", 50, "http query limit")
 	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", 10, "image process limit")
 	gcrCmd.PersistentFlags().DurationVar(&gcr.HttpTimeOut, "httptimeout", 10*time.Second, "http request timeout")

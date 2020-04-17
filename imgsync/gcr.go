@@ -20,6 +20,7 @@ const (
 )
 
 type Gcr struct {
+	Proxy             string
 	Kubeadm           bool
 	NameSpace         string
 	DockerHubUser     string
@@ -33,51 +34,50 @@ type Gcr struct {
 }
 
 // init gcr client
-func (g *Gcr) Init() *Gcr {
+func (gcr *Gcr) Init() *Gcr {
 
-	if g.NameSpace == "" {
-		g.NameSpace = "google-containers"
-	}
-
-	if g.SyncTimeOut == 0 {
-		g.SyncTimeOut = 1 * time.Hour
-	}
-
-	if g.HttpTimeOut == 0 {
-		g.HttpTimeOut = 5 * time.Second
-	}
-
-	if g.QueryLimit == 0 {
-		// query limit default 20
-		g.queryLimitCh = make(chan int, 20)
-	} else {
-		g.queryLimitCh = make(chan int, g.QueryLimit)
-	}
-
-	if g.ProcessLimit == 0 {
-		// process limit default 20
-		g.processLimitCh = make(chan int, 20)
-	} else {
-		g.processLimitCh = make(chan int, g.ProcessLimit)
-	}
-
-	if g.DockerHubUser == "" || g.DockerHubPassword == "" {
+	if gcr.DockerHubUser == "" || gcr.DockerHubPassword == "" {
 		logrus.Fatal("docker hub user or password is empty")
+	}
+
+	if gcr.NameSpace == "" {
+		gcr.NameSpace = "google-containers"
+	}
+
+	if gcr.SyncTimeOut == 0 {
+		gcr.SyncTimeOut = 1 * time.Hour
+	}
+
+	if gcr.HttpTimeOut == 0 {
+		gcr.HttpTimeOut = 5 * time.Second
+	}
+
+	if gcr.QueryLimit == 0 {
+		// query limit default 20
+		gcr.queryLimitCh = make(chan int, 20)
+	} else {
+		gcr.queryLimitCh = make(chan int, gcr.QueryLimit)
+	}
+
+	if gcr.ProcessLimit == 0 {
+		// process limit default 20
+		gcr.processLimitCh = make(chan int, 20)
+	} else {
+		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
 	}
 
 	logrus.Infoln("init success...")
 
-	return g
+	return gcr
 }
 
-func (g *Gcr) Sync() {
-
+func (gcr *Gcr) Sync() {
 	logrus.Info("starting sync gcr images...")
 
-	gcrImages := g.gcrImageList()
+	gcrImages := gcr.images()
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
 
-	ctx, cancel := context.WithTimeout(context.Background(), g.SyncTimeOut)
+	ctx, cancel := context.WithTimeout(context.Background(), gcr.SyncTimeOut)
 	defer cancel()
 
 	processWg := new(sync.WaitGroup)
@@ -87,12 +87,12 @@ func (g *Gcr) Sync() {
 		tmpImage := image
 		go func() {
 			defer func() {
-				<-g.processLimitCh
+				<-gcr.processLimitCh
 				processWg.Done()
 			}()
 			select {
-			case g.processLimitCh <- 1:
-				g.process(tmpImage)
+			case gcr.processLimitCh <- 1:
+				process(tmpImage, gcr.DockerHubUser, gcr.DockerHubPassword)
 			case <-ctx.Done():
 			}
 		}()
@@ -102,9 +102,9 @@ func (g *Gcr) Sync() {
 
 }
 
-func (g *Gcr) gcrImageList() []Image {
+func (gcr *Gcr) images() []Image {
 
-	publicImageNames := g.gcrPublicImageNames()
+	publicImageNames := gcr.imageNames()
 
 	logrus.Info("get gcr public image tags...")
 
@@ -116,22 +116,23 @@ func (g *Gcr) gcrImageList() []Image {
 		tmpImageName := imageName
 		go func() {
 			defer func() {
-				<-g.queryLimitCh
+				<-gcr.queryLimitCh
 				imgGetWg.Done()
 			}()
 
-			g.queryLimitCh <- 1
+			gcr.queryLimitCh <- 1
 
 			var addr string
-			if g.Kubeadm {
+			if gcr.Kubeadm {
 				addr = fmt.Sprintf(GcrKubeadmImageTagsTpl, tmpImageName)
 			} else {
-				addr = fmt.Sprintf(GcrStandardImageTagsTpl, g.NameSpace, tmpImageName)
+				addr = fmt.Sprintf(GcrStandardImageTagsTpl, gcr.NameSpace, tmpImageName)
 			}
 
 			logrus.Debugf("get gcr image tags, address: %s", addr)
 			resp, body, errs := gorequest.New().
-				Timeout(g.HttpTimeOut).
+				Proxy(gcr.Proxy).
+				Timeout(gcr.HttpTimeOut).
 				Retry(3, 1*time.Second).
 				Get(addr).
 				EndBytes()
@@ -149,7 +150,7 @@ func (g *Gcr) gcrImageList() []Image {
 			}
 
 			for _, tag := range tags {
-				if g.Kubeadm {
+				if gcr.Kubeadm {
 					imgCh <- Image{
 						Repo: "k8s.gcr.io",
 						Name: tmpImageName,
@@ -158,7 +159,7 @@ func (g *Gcr) gcrImageList() []Image {
 				} else {
 					imgCh <- Image{
 						Repo: "gcr.io",
-						User: g.NameSpace,
+						User: gcr.NameSpace,
 						Name: tmpImageName,
 						Tag:  tag,
 					}
@@ -188,19 +189,20 @@ func (g *Gcr) gcrImageList() []Image {
 	return images
 }
 
-func (g *Gcr) gcrPublicImageNames() []string {
+func (gcr *Gcr) imageNames() []string {
 
 	logrus.Info("get gcr public images...")
 
 	var addr string
-	if g.Kubeadm {
+	if gcr.Kubeadm {
 		addr = GcrKubeadmImagesTpl
 	} else {
-		addr = fmt.Sprintf(GcrStandardImagesTpl, g.NameSpace)
+		addr = fmt.Sprintf(GcrStandardImagesTpl, gcr.NameSpace)
 	}
 
 	resp, body, errs := gorequest.New().
-		Timeout(g.HttpTimeOut).
+		Proxy(gcr.Proxy).
+		Timeout(gcr.HttpTimeOut).
 		Retry(3, 1*time.Second).
 		Get(addr).
 		EndBytes()
@@ -215,16 +217,4 @@ func (g *Gcr) gcrPublicImageNames() []string {
 		logrus.Fatalf("failed to get gcr images, address: %s, error: %s", addr, err)
 	}
 	return imageNames
-}
-
-func (g *Gcr) process(image Image) {
-	logrus.Debugf("process image: %s", image)
-	err := syncDockerHub(image, DockerHubOption{
-		Username: g.DockerHubUser,
-		Password: g.DockerHubPassword,
-		Timeout:  10 * time.Minute,
-	})
-	if err != nil {
-		logrus.Errorf("failed to process image %s, error: %s", image, err)
-	}
 }
