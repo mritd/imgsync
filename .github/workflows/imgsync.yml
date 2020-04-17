@@ -23,13 +23,13 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build imgsync
-      run: make install && which imgsync
+      run: make bin
 
     - name: Upload imgsync
       uses: actions/upload-artifact@v1
       with:
         name: imgsync
-        path: ${GOPATH}/bin/imgsync
+        path: imgsync
 
   sync:
     name: Sync
@@ -40,7 +40,7 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: imgsync
-        path: /usr/local/bin/imgsync
+        path: imgsync
 
     - name: Sync k8s.gcr.io
       env:

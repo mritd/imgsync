@@ -22,7 +22,13 @@ install:
 						 -X 'github.com/mritd/imgsync/cmd.buildTime=${BUILD_TIME}' \
 						 -X 'github.com/mritd/imgsync/cmd.commit=${COMMIT_SHA1}'"
 
-.PHONY: all release clean install
+bin:
+	go build -tags="containers_image_openpgp" \
+		     -ldflags "-X 'github.com/mritd/imgsync/cmd.version=${BUILD_VERSION}' \
+					   -X 'github.com/mritd/imgsync/cmd.buildTime=${BUILD_TIME}' \
+					   -X 'github.com/mritd/imgsync/cmd.commit=${COMMIT_SHA1}'"
+
+.PHONY: all release clean install bin
 
 .EXPORT_ALL_VARIABLES:
 
