@@ -1,70 +1,71 @@
-# gcrsync [![Build Status](https://travis-ci.org/mritd/gcrsync.svg?branch=master)](https://travis-ci.org/mritd/gcrsync)
+# imgsync
 
 A docker image sync tool.
 
+|Registry|Address|Status|
+|--------|-------|------|
+|Flannel|[quay.io/coreos/flannel](quay.io/coreos/flannel)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|kubeadm|[k8s.gcr.io](k8s.gcr.io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Helm|[gcr.io/kubernetes-helm](gcr.io/kubernetes-helm)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Istio|[gcr.io/istio-release](gcr.io/istio-release)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Linkerd|[gcr.io/linkerd-io](gcr.io/linkerd-io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Spinnaker|[gcr.io/spinnaker-marketplace](gcr.io/spinnaker-marketplace)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Distroless|[gcr.io/distroless](gcr.io/distroless)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
+
 ## 安装
 
-工具采用 go 编写，安装可直接从 release 页下载对应平台二进制文件即可；如预编译文件不含有您的平台，
-可自行 build:
+工具采用 go 编写，安装可直接从 release 页下载对应平台二进制文件，并增加可执行权限运行既可
 
 ```bash
-export GO111MODULE=on
-go get github.com/mritd/gcrsync
+wget https://github.com/mritd/imgsync/releases/download/v2.0.0/imgsync_linux_amd64
+chmod +x imgsync_linux_amd64
+./imgsync_linux_amd64 --help
 ```
+
+## 编译
+
+如果预编译不包含您的平台架构，可以自行编译本工具，本工具编译依赖如下
+
+- make
+- git
+- Go 1.14.2+
+
+编译时直接运行 `make bin` 命令既可，如需交叉编译请安装 [gox](https://github.com/mitchellh/gox) 工具并执行 `make` 命令既可
 
 ## 使用
 
 ```bash
-A docker image sync tool for Google container registry (gcr.io).
+
+Docker image sync tool.
 
 Usage:
-  gcrsync [flags]
-  gcrsync [command]
+  imgsync [flags]
+  imgsync [command]
 
 Available Commands:
+  flannel     Sync flannel images
+  gcr         Sync gcr images
   help        Help about any command
-  monitor     Monitor sync images
-  sync        Sync gcr images
-  test        Test sync
 
 Flags:
-      --debug                  debug mode
-      --githubrepo string      github commit repo (default "mritd/gcr")
-      --githubtoken string     github commit token
-  -h, --help                   help for gcrsync
-      --httptimeout duration   http request timeout (default 10s)
-      --namespace string       google container registry namespace (default "google-containers")
-      --password string        docker registry user password
-      --processlimit int       image process limit (default 10)
-      --proxy string           http client proxy
-      --querylimit int         http query limit (default 50)
-      --synctimeout duration   sync timeout
-      --user string            docker registry user
+      --debug     debug mode
+  -h, --help      help for imgsync
+  -v, --version   version for imgsync
 
-Use "gcrsync [command] --help" for more information about a command.
+Use "imgsync [command] --help" for more information about a command.
 ```
 
-### monitor 命令
+### flannel
 
-实时在控制台显示对比差异；一般用于监测同步进度
+`flannel` 子命令用于同步 **quay.io** 的 flannel 镜像
 
-### sync 命令
+### gcr
 
-该命令进行真正的同步操作，工作流程如下:
+`gcr` 子命令用户同步 **gcr.io** 相关镜像，如果使用 `--kubeadm` 选项则同步 **k8s.gcr.io** 镜像
 
-- 首先使用 `--githubtoken` 给定的 token 克隆 `--githubrepo` 给定的仓库到本地(这个仓库应当为元数据仓库)
-- 获取 `gcr.io` 下由 `--namespace` 给定命名空间下的所有镜像
-- 获取 `docker hub` 中 `--user` 指定用户下所有镜像
-- 对比两者差异，得出待同步镜像
-- 执行 `pull`、`tag`、`push` 操作，将其推送到由 `--user` 给定的 Docker Hub 用户仓库中
-- 生成 CHANGELOG 并推送元数据仓库到远程
-
-### test 命令
-
-该命令与 sync 命令基本行为一致，只不过不进行真正的同步，会生成 CHANGELOG，但不会推送到远程
 
 ## 其他说明
 
-该工具并不建议个人使用，因为同步镜像会有很多；我自己同步大约产生了 2T 左右的流量，耗时 3 天左右才算基本
-同步完成；目前我已经将镜像同步到了 Docker Hub 的 `gcrxio` 用户下，可直接使用；这个工具开源目的是为了确保
-`gcrxio` 用户下的镜像安全得到保证；具体更细节说明，可参考[博客文章](https://mritd.me/2018/09/17/google-container-registry-sync/)
+**本工具并不依赖 Docker 运行，镜像拉取推送通过标准库完成；工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库
+打算。同步 Docker Hub 时默认会同步到 `--user` 指定的用户下，镜像名称会被转换，原镜像地址内 `/` 全部转换为 `_`。
+其他更细节使用请自行通过 `--help` 查看以及参考本项目 [Github Action](https://github.com/mritd/imgsync/tree/master/.github/workflows) 配置文件。**
