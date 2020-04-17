@@ -40,7 +40,7 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: imgsync
-        path: imgsync
+        path: /usr/local/bin/imgsync
 
     - name: Sync k8s.gcr.io
       env:
