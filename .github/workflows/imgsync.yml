@@ -1,4 +1,4 @@
-name: Go
+name: imasync
 
 on:
   push:
@@ -24,3 +24,13 @@ jobs:
 
     - name: Build
       run: make install
+
+  sync:
+    name: Sync
+    runs-on: ubuntu-latest
+    steps:
+    - name: Sync k8s.gcr.io
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
