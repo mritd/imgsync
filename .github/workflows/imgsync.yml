@@ -55,8 +55,8 @@ jobs:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-      chmod +x ./imgsync/imgsync
-      ./imgsync/imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+        chmod +x ./imgsync/imgsync
+        ./imgsync/imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
 
   sync_k8s:
     name: Sync k8s.gcr.io
@@ -74,5 +74,5 @@ jobs:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-      chmod +x ./imgsync/imgsync
-      ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+        chmod +x ./imgsync/imgsync
+        ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
