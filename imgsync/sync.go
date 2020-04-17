@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	ChangeLog      = "CHANGELOG-%s.md"
 	ManifestDir    = "manifests"
+	ChangeLog      = "CHANGELOG-%s.md"
 	DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
 	DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 )
@@ -84,4 +84,16 @@ func syncDockerHub(image Image, opt DockerHubOption) error {
 	}
 
 	return ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), m, 0644)
+}
+
+func process(image Image, user, password string) {
+	logrus.Debugf("process image: %s", image)
+	err := syncDockerHub(image, DockerHubOption{
+		Username: user,
+		Password: password,
+		Timeout:  10 * time.Minute,
+	})
+	if err != nil {
+		logrus.Errorf("failed to process image %s, error: %s", image, err)
+	}
 }
