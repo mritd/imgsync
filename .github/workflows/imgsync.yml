@@ -9,7 +9,7 @@ on:
 jobs:
 
   build:
-    name: Build
+    name: Build imgsync
     runs-on: ubuntu-latest
     steps:
 
@@ -39,9 +39,26 @@ jobs:
         name: imgsync
         path: imgsync
 
-  sync:
-    name: Sync
-    needs: Build
+  sync_flannel:
+    name: Sync flannel
+    needs: Build imgsync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync flannel images
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: ./imgsync/imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_k8s.gcr.io:
+    name: Sync k8s.gcr.io
+    needs: Sync flannel
     runs-on: ubuntu-latest
     steps:
     - name: Download artifact
@@ -54,4 +71,4 @@ jobs:
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: ./imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+      run: ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
