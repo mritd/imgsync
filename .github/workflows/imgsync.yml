@@ -33,6 +33,7 @@ jobs:
 
   sync:
     name: Sync
+    needs: Build
     runs-on: ubuntu-latest
     steps:
     - name: Download imgsync
