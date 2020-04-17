@@ -1,123 +1,171 @@
 package gcrsync
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"sync"
 	"time"
 
+	"github.com/parnurzeal/gorequest"
+
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mritd/gcrsync/utils"
 	"github.com/sirupsen/logrus"
 )
 
-type Image struct {
-	Name string
-	Tags []string
-}
-
 type Gcr struct {
-	Proxy          string
-	DockerUser     string
-	DockerPassword string
-	NameSpace      string
-	GithubToken    string
-	GithubRepo     string
-	CommitMsg      string
-	MonitorCount   int
 	TestMode       bool
+	Proxy          string
+	NameSpace      string
 	SyncTimeOut    time.Duration
-	QueryLimit     chan int
-	ProcessLimit   chan int
 	HttpTimeOut    time.Duration
-	httpClient     *http.Client
-	update         chan string
-	commitURL      string
+	QueryLimit     int
+	ProcessLimit   int
+	queryLimitCh   chan int
+	processLimitCh chan int
 }
 
-func (g *Gcr) gcrImageList() []string {
+// init gcr client
+func (g *Gcr) Init() {
 
-	var images []string
+	logrus.Infoln("init limit channel.")
+	if g.QueryLimit == 0 {
+		// query limit default 20
+		g.queryLimitCh = make(chan int, 20)
+	} else {
+		g.queryLimitCh = make(chan int, g.QueryLimit)
+	}
+
+	if g.ProcessLimit == 0 {
+		// process limit default 20
+		g.processLimitCh = make(chan int, 20)
+	} else {
+		g.processLimitCh = make(chan int, g.ProcessLimit)
+	}
+
+	logrus.Infoln("init success...")
+}
+
+func (g *Gcr) Sync() {
+
+	gcrImages := g.gcrImageList()
+	logrus.Infof("Google container registry images total: %d", len(gcrImages))
+
+	ctx, cancel := context.WithTimeout(context.Background(), g.SyncTimeOut)
+	defer cancel()
+
+	processWg := new(sync.WaitGroup)
+	processWg.Add(len(gcrImages))
+
+	for _, image := range gcrImages {
+		tmpImage := image
+		go func() {
+			defer func() {
+				<-g.processLimitCh
+				processWg.Done()
+			}()
+			select {
+			case g.processLimitCh <- 1:
+				g.Process(tmpImage)
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	processWg.Wait()
+
+}
+
+func (g *Gcr) gcrImageList() []Image {
+
 	publicImageNames := g.gcrPublicImageNames()
 
-	logrus.Debugf("Number of gcr images: %d", len(publicImageNames))
-
-	imgNameCh := make(chan string, 20)
+	imgCh := make(chan Image, 20)
 	imgGetWg := new(sync.WaitGroup)
 	imgGetWg.Add(len(publicImageNames))
 
 	for _, imageName := range publicImageNames {
-
 		tmpImageName := imageName
-
 		go func() {
 			defer func() {
-				g.QueryLimit <- 1
+				<-g.queryLimitCh
 				imgGetWg.Done()
 			}()
 
-			select {
-			case <-g.QueryLimit:
-				req, err := http.NewRequest("GET", fmt.Sprintf(GcrImageTags, g.NameSpace, tmpImageName), nil)
-				utils.CheckAndExit(err)
+			g.queryLimitCh <- 1
 
-				resp, err := g.httpClient.Do(req)
-				utils.CheckAndExit(err)
+			logrus.Infof("get gcr image %s/%s tags.", g.NameSpace, tmpImageName)
+			resp, body, errs := gorequest.New().
+				Proxy(g.Proxy).
+				Timeout(g.HttpTimeOut).
+				Retry(3, 1*time.Second).
+				Get(fmt.Sprintf(GcrImageTagsTpl, g.NameSpace, tmpImageName)).
+				EndBytes()
+			if errs != nil {
+				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, err: %s", g.NameSpace, tmpImageName, errs)
+			}
+			defer func() { _ = resp.Body.Close() }()
 
-				b, err := ioutil.ReadAll(resp.Body)
-				utils.CheckAndExit(err)
-				_ = resp.Body.Close()
+			var tags []string
+			err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
+			if err != nil {
+				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, err: %s", g.NameSpace, tmpImageName, err)
+			}
 
-				var tags []string
-				_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "tags").ToString(), &tags)
-
-				for _, tag := range tags {
-					imgNameCh <- tmpImageName + ":" + tag
+			for _, tag := range tags {
+				imgCh <- Image{
+					Repo: "gcr.io",
+					User: g.NameSpace,
+					Name: tmpImageName,
+					Tag:  tag,
 				}
 			}
 
 		}()
 	}
 
-	var imgReceiveWg sync.WaitGroup
-	imgReceiveWg.Add(1)
+	var images []Image
 	go func() {
-		defer imgReceiveWg.Done()
 		for {
 			select {
-			case imageName, ok := <-imgNameCh:
+			case image, ok := <-imgCh:
 				if ok {
-					images = append(images, imageName)
+					images = append(images, image)
 				} else {
-					goto imgSetExit
+					break
 				}
 			}
 		}
-	imgSetExit:
 	}()
 
 	imgGetWg.Wait()
-	close(imgNameCh)
-	imgReceiveWg.Wait()
+	close(imgCh)
 	return images
 }
 
 func (g *Gcr) gcrPublicImageNames() []string {
 
-	req, err := http.NewRequest("GET", fmt.Sprintf(GcrImages, g.NameSpace), nil)
-	utils.CheckAndExit(err)
+	logrus.Info("get gcr public images...")
 
-	resp, err := g.httpClient.Do(req)
-	utils.CheckAndExit(err)
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	utils.CheckAndExit(err)
+	resp, body, errs := gorequest.New().
+		Proxy(g.Proxy).
+		Timeout(g.HttpTimeOut).
+		Retry(3, 1*time.Second).
+		Get(fmt.Sprintf(GcrImagesTpl, g.NameSpace)).
+		EndBytes()
+	if errs != nil {
+		logrus.Fatalf("failed to get gcr images, namespace: %s, err: %s", g.NameSpace, errs)
+	}
+	defer func() { _ = resp.Body.Close() }()
 
 	var imageNames []string
-	_ = jsoniter.UnmarshalFromString(jsoniter.Get(b, "child").ToString(), &imageNames)
+	err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "child").ToString(), &imageNames)
+	if err != nil {
+		logrus.Fatalf("failed to get gcr images, namespace: %s, err: %s", g.NameSpace, err)
+	}
+	logrus.Infof("number of gcr images: %d", len(imageNames))
 	return imageNames
+}
+
+func (g *Gcr) Process(image Image) {
+	logrus.Infof("process image: %s", image)
 }

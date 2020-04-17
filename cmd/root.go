@@ -10,8 +10,7 @@ import (
 
 var debug bool
 var proxy, dockerUser, dockerPassword, nameSpace string
-var githubRepo, githubToken string
-var queryLimit, processLimit, monitorCount int
+var queryLimit, processLimit int
 var httpTimeOut, syncTimeOut time.Duration
 
 var rootCmd = &cobra.Command{
@@ -39,10 +38,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&nameSpace, "namespace", "google-containers", "google container registry namespace")
 	rootCmd.PersistentFlags().IntVar(&queryLimit, "querylimit", 50, "http query limit")
 	rootCmd.PersistentFlags().DurationVar(&httpTimeOut, "httptimeout", 10*time.Second, "http request timeout")
-	rootCmd.PersistentFlags().DurationVar(&syncTimeOut, "synctimeout", 0, "sync timeout")
+	rootCmd.PersistentFlags().DurationVar(&syncTimeOut, "synctimeout", 1*time.Hour, "sync timeout")
 	rootCmd.PersistentFlags().IntVar(&processLimit, "processlimit", 10, "image process limit")
-	rootCmd.PersistentFlags().StringVar(&githubRepo, "githubrepo", "mritd/gcr", "github commit repo")
-	rootCmd.PersistentFlags().StringVar(&githubToken, "githubtoken", "", "github commit token")
 }
 
 func initLog() {

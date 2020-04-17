@@ -14,18 +14,13 @@ Test sync.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		gcr := &gcrsync.Gcr{
-			Proxy:          proxy,
-			DockerUser:     dockerUser,
-			DockerPassword: dockerPassword,
-			NameSpace:      nameSpace,
-			QueryLimit:     make(chan int, queryLimit),
-			ProcessLimit:   make(chan int, processLimit),
-			SyncTimeOut:    syncTimeOut,
-			HttpTimeOut:    httpTimeOut,
-			GithubRepo:     githubRepo,
-			GithubToken:    githubToken,
-			CommitMsg:      commitMsg,
-			TestMode:       true,
+			Proxy:        proxy,
+			NameSpace:    nameSpace,
+			QueryLimit:   queryLimit,
+			ProcessLimit: processLimit,
+			SyncTimeOut:  syncTimeOut,
+			HttpTimeOut:  httpTimeOut,
+			TestMode:     true,
 		}
 		gcr.Init()
 		gcr.Sync()
