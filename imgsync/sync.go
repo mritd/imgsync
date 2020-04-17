@@ -1,4 +1,4 @@
-package gcrsync
+package imgsync
 
 import (
 	"context"

@@ -12,5 +12,3 @@
 *.out
 
 dist
-gcr.db
-CHANGELOG.md

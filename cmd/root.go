@@ -9,10 +9,10 @@ import (
 var debug bool
 
 var rootCmd = &cobra.Command{
-	Use:   "gcrsync",
-	Short: "A docker image sync tool for Google container registry (gcr.io)",
+	Use:   "imgsync",
+	Short: "Docker image sync tool",
 	Long: `
-A docker image sync tool for Google container registry (gcr.io).`,
+Docker image sync tool.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

@@ -1,4 +1,4 @@
-package gcrsync
+package imgsync
 
 import (
 	"context"
@@ -98,6 +98,8 @@ func (g *Gcr) gcrImageList() []Image {
 
 	publicImageNames := g.gcrPublicImageNames()
 
+	logrus.Info("get gcr public image tags...")
+
 	imgCh := make(chan Image, 20)
 	imgGetWg := new(sync.WaitGroup)
 	imgGetWg.Add(len(publicImageNames))
@@ -112,21 +114,23 @@ func (g *Gcr) gcrImageList() []Image {
 
 			g.queryLimitCh <- 1
 
-			logrus.Infof("get gcr image %s/%s tags.", g.NameSpace, tmpImageName)
+			logrus.Debugf("get gcr image %s/%s tags.", g.NameSpace, tmpImageName)
 			resp, body, errs := gorequest.New().
 				Timeout(g.HttpTimeOut).
 				Retry(3, 1*time.Second).
 				Get(fmt.Sprintf(GcrImageTagsTpl, g.NameSpace, tmpImageName)).
 				EndBytes()
 			if errs != nil {
-				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, errs)
+				logrus.Errorf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, errs)
+				return
 			}
 			defer func() { _ = resp.Body.Close() }()
 
 			var tags []string
 			err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
 			if err != nil {
-				logrus.Fatalf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, err)
+				logrus.Errorf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, err)
+				return
 			}
 
 			for _, tag := range tags {
@@ -179,7 +183,6 @@ func (g *Gcr) gcrPublicImageNames() []string {
 	if err != nil {
 		logrus.Fatalf("failed to get gcr images, namespace: %s, error: %s", g.NameSpace, err)
 	}
-	logrus.Infof("number of gcr images: %d", len(imageNames))
 	return imageNames
 }
 

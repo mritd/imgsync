@@ -1,4 +1,4 @@
-module github.com/mritd/gcrsync
+module github.com/mritd/imgsync
 
 go 1.14
 
