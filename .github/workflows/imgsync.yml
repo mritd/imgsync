@@ -22,13 +22,25 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Build
+    - name: Build imgsync
       run: make install
+
+    - name: Upload imgsync
+      uses: actions/upload-artifact@v1
+      with:
+        name: imgsync
+        path: ${GOPATH}/bin/imgsync
 
   sync:
     name: Sync
     runs-on: ubuntu-latest
     steps:
+    - name: Download imgsync
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: /usr/local/bin/imgsync
+
     - name: Sync k8s.gcr.io
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
