@@ -61,7 +61,7 @@ jobs:
 
   sync_k8s:
     name: Sync k8s.gcr.io
-    needs: sync_flannel
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Download artifact
@@ -78,3 +78,103 @@ jobs:
       run: |
         chmod +x ./imgsync/imgsync
         ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_helm:
+    name: Sync kubernetes-helm
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync kubernetes-helm images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_istio:
+    name: Sync istio-release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync istio-release images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_linkerd:
+    name: Sync linkerd-io
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync linkerd-io images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_spinnaker:
+    name: Sync spinnaker-marketplace
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync spinnaker-marketplace images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+
+  sync_distroless:
+    name: Sync distroless
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync distroless images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}          
