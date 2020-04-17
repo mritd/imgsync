@@ -1,0 +1,60 @@
+name: Sync Distroless
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build imgsync
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.14
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Cache go mod
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Build binary file
+      run: make bin
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: imgsync
+        path: imgsync
+
+  sync_distroless:
+    name: Sync distroless
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: imgsync
+          path: ./imgsync
+
+      - name: Sync distroless images
+        env:
+          TZ: Asia/Shanghai
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chmod +x ./imgsync/imgsync
+          ./imgsync/imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
