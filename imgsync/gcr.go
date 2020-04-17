@@ -12,7 +12,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	GcrKubeadmImagesTpl     = "https://k8s.gcr.io/v2/tags/list"
+	GcrStandardImagesTpl    = "https://gcr.io/v2/%s/tags/list"
+	GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
+	GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
+)
+
 type Gcr struct {
+	Kubeadm           bool
 	NameSpace         string
 	DockerHubUser     string
 	DockerHubPassword string
@@ -114,14 +122,21 @@ func (g *Gcr) gcrImageList() []Image {
 
 			g.queryLimitCh <- 1
 
-			logrus.Debugf("get gcr image %s/%s tags.", g.NameSpace, tmpImageName)
+			var addr string
+			if g.Kubeadm {
+				addr = fmt.Sprintf(GcrKubeadmImageTagsTpl, tmpImageName)
+			} else {
+				addr = fmt.Sprintf(GcrStandardImageTagsTpl, g.NameSpace, tmpImageName)
+			}
+
+			logrus.Debugf("get gcr image tags, address: %s", addr)
 			resp, body, errs := gorequest.New().
 				Timeout(g.HttpTimeOut).
 				Retry(3, 1*time.Second).
-				Get(fmt.Sprintf(GcrImageTagsTpl, g.NameSpace, tmpImageName)).
+				Get(addr).
 				EndBytes()
 			if errs != nil {
-				logrus.Errorf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, errs)
+				logrus.Errorf("failed to get gcr image tags, address: %s, error: %s", addr, errs)
 				return
 			}
 			defer func() { _ = resp.Body.Close() }()
@@ -129,17 +144,26 @@ func (g *Gcr) gcrImageList() []Image {
 			var tags []string
 			err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
 			if err != nil {
-				logrus.Errorf("failed to get gcr image tags, namespace: %s, image: %s, error: %s", g.NameSpace, tmpImageName, err)
+				logrus.Errorf("failed to get gcr image tags, address: %s, error: %s", addr, err)
 				return
 			}
 
 			for _, tag := range tags {
-				imgCh <- Image{
-					Repo: "gcr.io",
-					User: g.NameSpace,
-					Name: tmpImageName,
-					Tag:  tag,
+				if g.Kubeadm {
+					imgCh <- Image{
+						Repo: "k8s.gcr.io",
+						Name: tmpImageName,
+						Tag:  tag,
+					}
+				} else {
+					imgCh <- Image{
+						Repo: "gcr.io",
+						User: g.NameSpace,
+						Name: tmpImageName,
+						Tag:  tag,
+					}
 				}
+
 			}
 
 		}()
@@ -168,26 +192,33 @@ func (g *Gcr) gcrPublicImageNames() []string {
 
 	logrus.Info("get gcr public images...")
 
+	var addr string
+	if g.Kubeadm {
+		addr = GcrKubeadmImagesTpl
+	} else {
+		addr = fmt.Sprintf(GcrStandardImagesTpl, g.NameSpace)
+	}
+
 	resp, body, errs := gorequest.New().
 		Timeout(g.HttpTimeOut).
 		Retry(3, 1*time.Second).
-		Get(fmt.Sprintf(GcrImagesTpl, g.NameSpace)).
+		Get(addr).
 		EndBytes()
 	if errs != nil {
-		logrus.Fatalf("failed to get gcr images, namespace: %s, error: %s", g.NameSpace, errs)
+		logrus.Fatalf("failed to get gcr images, address: %s, error: %s", addr, errs)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	var imageNames []string
 	err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "child").ToString(), &imageNames)
 	if err != nil {
-		logrus.Fatalf("failed to get gcr images, namespace: %s, error: %s", g.NameSpace, err)
+		logrus.Fatalf("failed to get gcr images, address: %s, error: %s", addr, err)
 	}
 	return imageNames
 }
 
 func (g *Gcr) process(image Image) {
-	logrus.Infof("process image: %s", image)
+	logrus.Debugf("process image: %s", image)
 	err := syncDockerHub(image, DockerHubOption{
 		Username: g.DockerHubUser,
 		Password: g.DockerHubPassword,

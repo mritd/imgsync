@@ -10,9 +10,17 @@ type Image struct {
 }
 
 func (img Image) String() string {
-	return fmt.Sprintf("%s/%s/%s:%s", img.Repo, img.User, img.Name, img.Tag)
+	if img.User != "" {
+		return fmt.Sprintf("%s/%s/%s:%s", img.Repo, img.User, img.Name, img.Tag)
+	} else {
+		return fmt.Sprintf("%s/%s:%s", img.Repo, img.Name, img.Tag)
+	}
 }
 
 func (img Image) MergeName() string {
-	return fmt.Sprintf("%s_%s_%s", img.Repo, img.User, img.Name)
+	if img.User != "" {
+		return fmt.Sprintf("%s_%s_%s", img.Repo, img.User, img.Name)
+	} else {
+		return fmt.Sprintf("%s_%s", img.Repo, img.Name)
+	}
 }

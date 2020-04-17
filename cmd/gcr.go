@@ -28,4 +28,5 @@ func init() {
 	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", 10, "image process limit")
 	gcrCmd.PersistentFlags().DurationVar(&gcr.HttpTimeOut, "httptimeout", 10*time.Second, "http request timeout")
 	gcrCmd.PersistentFlags().DurationVar(&gcr.SyncTimeOut, "synctimeout", 1*time.Hour, "docker hub sync timeout")
+	gcrCmd.PersistentFlags().BoolVar(&gcr.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
 }
