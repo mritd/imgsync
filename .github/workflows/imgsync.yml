@@ -56,7 +56,7 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: ./imgsync/imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
 
-  sync_k8s.gcr.io:
+  sync_k8s:
     name: Sync k8s.gcr.io
     needs: Sync flannel
     runs-on: ubuntu-latest
