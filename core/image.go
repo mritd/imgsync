@@ -1,4 +1,4 @@
-package imgsync
+package core
 
 import "fmt"
 

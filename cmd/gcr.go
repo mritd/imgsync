@@ -3,11 +3,11 @@ package cmd
 import (
 	"time"
 
-	"github.com/mritd/imgsync/imgsync"
+	"github.com/mritd/imgsync/core"
 	"github.com/spf13/cobra"
 )
 
-var gcr imgsync.Gcr
+var gcr core.Gcr
 
 var gcrCmd = &cobra.Command{
 	Use:   "gcr",

@@ -3,11 +3,11 @@ package cmd
 import (
 	"time"
 
-	"github.com/mritd/imgsync/imgsync"
+	"github.com/mritd/imgsync/core"
 	"github.com/spf13/cobra"
 )
 
-var flannel imgsync.Flannel
+var flannel core.Flannel
 
 var flannelCmd = &cobra.Command{
 	Use:   "flannel",
