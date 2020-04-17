@@ -41,7 +41,7 @@ jobs:
 
   sync_flannel:
     name: Sync flannel
-    needs: Build imgsync
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Download artifact
@@ -58,7 +58,7 @@ jobs:
 
   sync_k8s:
     name: Sync k8s.gcr.io
-    needs: Sync flannel
+    needs: sync_flannel
     runs-on: ubuntu-latest
     steps:
     - name: Download artifact
