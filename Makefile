@@ -10,8 +10,11 @@ all:
 					-X 'github.com/mritd/imgsync/cmd.buildTime=${BUILD_TIME}' \
 					-X 'github.com/mritd/imgsync/cmd.commit=${COMMIT_SHA1}'"
 
+pre-release: all
+	ghr -u mritd -t ${GITHUB_TOKEN} -replace -prerelease --debug ${BUILD_VERSION} dist
+
 release: all
-	ghr -u mritd -t ${GITHUB_RELEASE_TOKEN} -replace -recreate --debug ${BUILD_VERSION} dist
+	ghr -u mritd -t ${GITHUB_TOKEN} -replace -recreate --debug ${BUILD_VERSION} dist
 
 clean:
 	rm -rf dist
