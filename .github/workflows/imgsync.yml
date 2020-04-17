@@ -40,10 +40,10 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: imgsync
-        path: /usr/local/bin/imgsync
+        path: ./imgsync
 
     - name: Sync k8s.gcr.io
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+      run: ./imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
