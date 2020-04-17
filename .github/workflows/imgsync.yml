@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download imgsync
-        uses: actions/download-artifact@v1
-        with:
-          name: imgsync
-          path: /usr/local/bin/imgsync
+      uses: actions/download-artifact@v1
+      with:
+        name: imgsync
+        path: /usr/local/bin/imgsync
 
     - name: Sync k8s.gcr.io
       env:
