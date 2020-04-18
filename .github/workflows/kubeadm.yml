@@ -57,4 +57,4 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           chmod +x ./imgsync/imgsync
-          ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+          ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 30
