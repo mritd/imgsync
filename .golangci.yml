@@ -61,7 +61,6 @@ linters:
     - gocritic
     - gocyclo
     - gofmt
-    - goimports
     - golint
     - gomnd
     - goprintffuncname
