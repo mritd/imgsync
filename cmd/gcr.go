@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"time"
-
 	"github.com/mritd/imgsync/core"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +25,7 @@ func init() {
 	gcrCmd.PersistentFlags().StringVar(&gcr.Proxy, "proxy", "", "http client proxy")
 	gcrCmd.PersistentFlags().IntVar(&gcr.QueryLimit, "querylimit", 50, "http query limit")
 	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", 10, "image process limit")
-	gcrCmd.PersistentFlags().DurationVar(&gcr.HttpTimeOut, "httptimeout", 10*time.Second, "http request timeout")
-	gcrCmd.PersistentFlags().DurationVar(&gcr.SyncTimeOut, "synctimeout", 1*time.Hour, "docker hub sync timeout")
+	gcrCmd.PersistentFlags().DurationVar(&gcr.HTTPTimeOut, "httptimeout", defaultHTTPTimeout, "http request timeout")
+	gcrCmd.PersistentFlags().DurationVar(&gcr.SyncTimeOut, "synctimeout", defaultSyncTimeout, "docker hub sync timeout")
 	gcrCmd.PersistentFlags().BoolVar(&gcr.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
 }

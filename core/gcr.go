@@ -26,7 +26,7 @@ type Gcr struct {
 	DockerHubUser     string
 	DockerHubPassword string
 	SyncTimeOut       time.Duration
-	HttpTimeOut       time.Duration
+	HTTPTimeOut       time.Duration
 	QueryLimit        int
 	ProcessLimit      int
 	queryLimitCh      chan int
@@ -35,7 +35,6 @@ type Gcr struct {
 
 // init gcr client
 func (gcr *Gcr) Init() *Gcr {
-
 	if gcr.DockerHubUser == "" || gcr.DockerHubPassword == "" {
 		logrus.Fatal("docker hub user or password is empty")
 	}
@@ -45,28 +44,28 @@ func (gcr *Gcr) Init() *Gcr {
 	}
 
 	if gcr.SyncTimeOut == 0 {
-		gcr.SyncTimeOut = 1 * time.Hour
+		gcr.SyncTimeOut = defaultSyncTimeout
 	}
 
-	if gcr.HttpTimeOut == 0 {
-		gcr.HttpTimeOut = 5 * time.Second
+	if gcr.HTTPTimeOut == 0 {
+		gcr.HTTPTimeOut = defaultHTTPTimeOut
 	}
 
 	if gcr.QueryLimit == 0 {
 		// query limit default 20
-		gcr.queryLimitCh = make(chan int, 20)
+		gcr.queryLimitCh = make(chan int, defaultLimit)
 	} else {
 		gcr.queryLimitCh = make(chan int, gcr.QueryLimit)
 	}
 
 	if gcr.ProcessLimit == 0 {
 		// process limit default 20
-		gcr.processLimitCh = make(chan int, 20)
+		gcr.processLimitCh = make(chan int, defaultLimit)
 	} else {
 		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
 	}
 
-	logrus.Infoln("init success...")
+	logrus.Info("init success...")
 
 	return gcr
 }
@@ -99,16 +98,14 @@ func (gcr *Gcr) Sync() {
 	}
 
 	processWg.Wait()
-
 }
 
 func (gcr *Gcr) images() []Image {
-
 	publicImageNames := gcr.imageNames()
 
 	logrus.Info("get gcr public image tags...")
 
-	imgCh := make(chan Image, 20)
+	imgCh := make(chan Image, defaultLimit)
 	imgGetWg := new(sync.WaitGroup)
 	imgGetWg.Add(len(publicImageNames))
 
@@ -132,8 +129,8 @@ func (gcr *Gcr) images() []Image {
 			logrus.Debugf("get gcr image tags, address: %s", addr)
 			resp, body, errs := gorequest.New().
 				Proxy(gcr.Proxy).
-				Timeout(gcr.HttpTimeOut).
-				Retry(3, 1*time.Second).
+				Timeout(gcr.HTTPTimeOut).
+				Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
 				Get(addr).
 				EndBytes()
 			if errs != nil {
@@ -164,23 +161,14 @@ func (gcr *Gcr) images() []Image {
 						Tag:  tag,
 					}
 				}
-
 			}
-
 		}()
 	}
 
 	var images []Image
 	go func() {
-		for {
-			select {
-			case image, ok := <-imgCh:
-				if ok {
-					images = append(images, image)
-				} else {
-					break
-				}
-			}
+		for image := range imgCh {
+			images = append(images, image)
 		}
 	}()
 
@@ -190,7 +178,6 @@ func (gcr *Gcr) images() []Image {
 }
 
 func (gcr *Gcr) imageNames() []string {
-
 	logrus.Info("get gcr public images...")
 
 	var addr string
@@ -202,8 +189,8 @@ func (gcr *Gcr) imageNames() []string {
 
 	resp, body, errs := gorequest.New().
 		Proxy(gcr.Proxy).
-		Timeout(gcr.HttpTimeOut).
-		Retry(3, 1*time.Second).
+		Timeout(gcr.HTTPTimeOut).
+		Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
 		Get(addr).
 		EndBytes()
 	if errs != nil {

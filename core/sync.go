@@ -30,7 +30,6 @@ type DockerHubOption struct {
 }
 
 func syncDockerHub(image Image, opt DockerHubOption) error {
-
 	destImage := Image{
 		Repo: "docker.io",
 		User: opt.Username,
@@ -43,7 +42,11 @@ func syncDockerHub(image Image, opt DockerHubOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer cancel()
 
-	policyContext, err := signature.NewPolicyContext(&signature.Policy{Default: []signature.PolicyRequirement{signature.NewPRInsecureAcceptAnything()}})
+	policyContext, err := signature.NewPolicyContext(
+		&signature.Policy{
+			Default: []signature.PolicyRequirement{signature.NewPRInsecureAcceptAnything()},
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -78,7 +81,7 @@ func syncDockerHub(image Image, opt DockerHubOption) error {
 	storageDir := filepath.Join(ManifestDir, image.Repo, image.Name)
 	// ignore other error
 	if _, err := os.Stat(storageDir); err != nil {
-		if err = os.MkdirAll(storageDir, 0755); err != nil {
+		if err := os.MkdirAll(storageDir, 0755); err != nil {
 			return err
 		}
 	}

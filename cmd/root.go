@@ -4,10 +4,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	defaultHTTPTimeout = 10 * time.Second
+	defaultSyncTimeout = 1 * time.Hour
 )
 
 var version, buildTime, commit string

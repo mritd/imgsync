@@ -22,33 +22,32 @@ type Flannel struct {
 	DockerHubUser     string
 	DockerHubPassword string
 	SyncTimeOut       time.Duration
-	HttpTimeOut       time.Duration
+	HTTPTimeOut       time.Duration
 	ProcessLimit      int
 	processLimitCh    chan int
 }
 
 func (fl *Flannel) Init() *Flannel {
-
 	if fl.DockerHubUser == "" || fl.DockerHubPassword == "" {
 		logrus.Fatal("docker hub user or password is empty")
 	}
 
 	if fl.SyncTimeOut == 0 {
-		fl.SyncTimeOut = 1 * time.Hour
+		fl.SyncTimeOut = defaultSyncTimeout
 	}
 
-	if fl.HttpTimeOut == 0 {
-		fl.HttpTimeOut = 5 * time.Second
+	if fl.HTTPTimeOut == 0 {
+		fl.HTTPTimeOut = defaultSyncTimeout
 	}
 
 	if fl.ProcessLimit == 0 {
 		// process limit default 20
-		fl.processLimitCh = make(chan int, 20)
+		fl.processLimitCh = make(chan int, defaultLimit)
 	} else {
 		fl.processLimitCh = make(chan int, fl.ProcessLimit)
 	}
 
-	logrus.Infoln("init success...")
+	logrus.Info("init success...")
 
 	return fl
 }
@@ -86,8 +85,8 @@ func (fl *Flannel) images() []Image {
 	logrus.Debugf("get flannel images, address: %s", FlannelImagesTpl)
 	resp, body, errs := gorequest.New().
 		Proxy(fl.Proxy).
-		Timeout(fl.HttpTimeOut).
-		Retry(3, 1*time.Second).
+		Timeout(fl.HTTPTimeOut).
+		Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
 		Get(FlannelImagesTpl).
 		EndBytes()
 	if errs != nil {
