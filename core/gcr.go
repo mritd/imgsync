@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"sync"
 	"time"
@@ -24,14 +25,17 @@ type Gcr struct {
 	Proxy             string
 	Kubeadm           bool
 	NameSpace         string
+	IgnoreTagRex      string
 	DockerHubUser     string
 	DockerHubPassword string
 	SyncTimeOut       time.Duration
 	HTTPTimeOut       time.Duration
 	QueryLimit        int
 	ProcessLimit      int
-	queryLimitCh      chan int
-	processLimitCh    chan int
+
+	queryLimitCh   chan int
+	processLimitCh chan int
+	ignoreTagReg   *regexp.Regexp
 }
 
 // init gcr client
@@ -64,6 +68,14 @@ func (gcr *Gcr) Init() *Gcr {
 		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
 	}
 
+	if gcr.IgnoreTagRex != "" {
+		r, err := regexp.Compile(gcr.IgnoreTagRex)
+		if err != nil {
+			logrus.Fatalf("failed to build tag ignore regex: %s", err)
+		}
+		gcr.ignoreTagReg = r
+	}
+
 	logrus.Info("init success...")
 
 	return gcr
@@ -84,6 +96,9 @@ func (gcr *Gcr) Sync() {
 
 	for _, image := range gcrImages {
 		tmpImage := image
+		if gcr.ignoreTagReg != nil && gcr.ignoreTagReg.FindString(tmpImage.Tag) != "" {
+			continue
+		}
 		go func() {
 			defer func() {
 				<-gcr.processLimitCh

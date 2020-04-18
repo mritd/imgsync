@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"regexp"
 	"sort"
 	"sync"
 	"time"
@@ -22,10 +23,13 @@ type Flannel struct {
 	Proxy             string
 	DockerHubUser     string
 	DockerHubPassword string
+	IgnoreTagRex      string
 	SyncTimeOut       time.Duration
 	HTTPTimeOut       time.Duration
 	ProcessLimit      int
-	processLimitCh    chan int
+
+	processLimitCh chan int
+	ignoreTagReg   *regexp.Regexp
 }
 
 func (fl *Flannel) Init() *Flannel {
@@ -45,6 +49,14 @@ func (fl *Flannel) Init() *Flannel {
 		fl.processLimitCh = make(chan int, DefaultLimit)
 	} else {
 		fl.processLimitCh = make(chan int, fl.ProcessLimit)
+	}
+
+	if fl.IgnoreTagRex != "" {
+		r, err := regexp.Compile(fl.IgnoreTagRex)
+		if err != nil {
+			logrus.Fatalf("failed to build tag ignore regex: %s", err)
+		}
+		fl.ignoreTagReg = r
 	}
 
 	logrus.Info("init success...")
@@ -67,6 +79,9 @@ func (fl *Flannel) Sync() {
 
 	for _, image := range flImages {
 		tmpImage := image
+		if fl.ignoreTagReg != nil && fl.ignoreTagReg.FindString(tmpImage.Tag) != "" {
+			continue
+		}
 		go func() {
 			defer func() {
 				<-fl.processLimitCh

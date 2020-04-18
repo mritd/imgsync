@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/mritd/imgsync/core"
+
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,7 @@ func init() {
 	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubPassword, "password", "", "docker hub user password")
 	gcrCmd.PersistentFlags().StringVar(&gcr.NameSpace, "namespace", "google-containers", "google container registry namespace")
 	gcrCmd.PersistentFlags().StringVar(&gcr.Proxy, "proxy", "", "http client proxy")
+	gcrCmd.PersistentFlags().StringVar(&gcr.IgnoreTagRex, "ignoretag", "", "ignore image where tag matches regular expression")
 	gcrCmd.PersistentFlags().IntVar(&gcr.QueryLimit, "querylimit", core.DefaultLimit, "http query limit")
 	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", core.DefaultLimit, "image process limit")
 	gcrCmd.PersistentFlags().DurationVar(&gcr.HTTPTimeOut, "httptimeout", core.DefaultHTTPTimeOut, "http request timeout")

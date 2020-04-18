@@ -22,6 +22,7 @@ func init() {
 	flannelCmd.PersistentFlags().StringVar(&flannel.DockerHubUser, "user", "", "docker hub user")
 	flannelCmd.PersistentFlags().StringVar(&flannel.DockerHubPassword, "password", "", "docker hub user password")
 	flannelCmd.PersistentFlags().StringVar(&flannel.Proxy, "proxy", "", "http client proxy")
+	flannelCmd.PersistentFlags().StringVar(&flannel.IgnoreTagRex, "ignoretag", "", "ignore image where tag matches regular expression")
 	flannelCmd.PersistentFlags().IntVar(&flannel.ProcessLimit, "processlimit", core.DefaultLimit, "image process limit")
 	flannelCmd.PersistentFlags().DurationVar(&flannel.HTTPTimeOut, "httptimeout", core.DefaultHTTPTimeOut, "http request timeout")
 	flannelCmd.PersistentFlags().DurationVar(&flannel.SyncTimeOut, "synctimeout", core.DefaultSyncTimeout, "docker hub sync timeout")
