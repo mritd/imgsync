@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -33,16 +34,16 @@ func (fl *Flannel) Init() *Flannel {
 	}
 
 	if fl.SyncTimeOut == 0 {
-		fl.SyncTimeOut = defaultSyncTimeout
+		fl.SyncTimeOut = DefaultSyncTimeout
 	}
 
 	if fl.HTTPTimeOut == 0 {
-		fl.HTTPTimeOut = defaultSyncTimeout
+		fl.HTTPTimeOut = DefaultHTTPTimeOut
 	}
 
 	if fl.ProcessLimit == 0 {
 		// process limit default 20
-		fl.processLimitCh = make(chan int, defaultLimit)
+		fl.processLimitCh = make(chan int, DefaultLimit)
 	} else {
 		fl.processLimitCh = make(chan int, fl.ProcessLimit)
 	}
@@ -54,16 +55,18 @@ func (fl *Flannel) Init() *Flannel {
 
 func (fl *Flannel) Sync() {
 	logrus.Info("starting sync flannel images...")
-	images := fl.images()
-	logrus.Infof("Flannel images total: %d", len(images))
+
+	flImages := fl.images()
+	sort.Sort(flImages)
+	logrus.Infof("Flannel images total: %d", len(flImages))
 
 	ctx, cancel := context.WithTimeout(context.Background(), fl.SyncTimeOut)
 	defer cancel()
 
 	processWg := new(sync.WaitGroup)
-	processWg.Add(len(images))
+	processWg.Add(len(flImages))
 
-	for _, image := range images {
+	for _, image := range flImages {
 		tmpImage := image
 		go func() {
 			defer func() {
@@ -81,12 +84,12 @@ func (fl *Flannel) Sync() {
 	processWg.Wait()
 }
 
-func (fl *Flannel) images() []Image {
+func (fl *Flannel) images() Images {
 	logrus.Debugf("get flannel images, address: %s", FlannelImagesTpl)
 	resp, body, errs := gorequest.New().
 		Proxy(fl.Proxy).
 		Timeout(fl.HTTPTimeOut).
-		Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
+		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 		Get(FlannelImagesTpl).
 		EndBytes()
 	if errs != nil {
@@ -102,7 +105,7 @@ func (fl *Flannel) images() []Image {
 		logrus.Fatalf("failed to get flannel image tags, address: %s, error: %s", FlannelImagesTpl, err)
 	}
 
-	var images []Image
+	var images Images
 	for _, tag := range tags {
 		images = append(images, Image{
 			Repo: "quay.io",

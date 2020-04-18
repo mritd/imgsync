@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -44,23 +45,23 @@ func (gcr *Gcr) Init() *Gcr {
 	}
 
 	if gcr.SyncTimeOut == 0 {
-		gcr.SyncTimeOut = defaultSyncTimeout
+		gcr.SyncTimeOut = DefaultSyncTimeout
 	}
 
 	if gcr.HTTPTimeOut == 0 {
-		gcr.HTTPTimeOut = defaultHTTPTimeOut
+		gcr.HTTPTimeOut = DefaultHTTPTimeOut
 	}
 
 	if gcr.QueryLimit == 0 {
 		// query limit default 20
-		gcr.queryLimitCh = make(chan int, defaultLimit)
+		gcr.queryLimitCh = make(chan int, DefaultLimit)
 	} else {
 		gcr.queryLimitCh = make(chan int, gcr.QueryLimit)
 	}
 
 	if gcr.ProcessLimit == 0 {
 		// process limit default 20
-		gcr.processLimitCh = make(chan int, defaultLimit)
+		gcr.processLimitCh = make(chan int, DefaultLimit)
 	} else {
 		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
 	}
@@ -74,6 +75,7 @@ func (gcr *Gcr) Sync() {
 	logrus.Info("starting sync gcr images...")
 
 	gcrImages := gcr.images()
+	sort.Sort(gcrImages)
 	logrus.Infof("Google container registry images total: %d", len(gcrImages))
 
 	ctx, cancel := context.WithTimeout(context.Background(), gcr.SyncTimeOut)
@@ -100,12 +102,12 @@ func (gcr *Gcr) Sync() {
 	processWg.Wait()
 }
 
-func (gcr *Gcr) images() []Image {
+func (gcr *Gcr) images() Images {
 	publicImageNames := gcr.imageNames()
 
 	logrus.Info("get gcr public image tags...")
 
-	imgCh := make(chan Image, defaultLimit)
+	imgCh := make(chan Image, DefaultLimit)
 	imgGetWg := new(sync.WaitGroup)
 	imgGetWg.Add(len(publicImageNames))
 
@@ -130,7 +132,7 @@ func (gcr *Gcr) images() []Image {
 			resp, body, errs := gorequest.New().
 				Proxy(gcr.Proxy).
 				Timeout(gcr.HTTPTimeOut).
-				Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
+				Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 				Get(addr).
 				EndBytes()
 			if errs != nil {
@@ -165,7 +167,7 @@ func (gcr *Gcr) images() []Image {
 		}()
 	}
 
-	var images []Image
+	var images Images
 	go func() {
 		for image := range imgCh {
 			images = append(images, image)
@@ -190,7 +192,7 @@ func (gcr *Gcr) imageNames() []string {
 	resp, body, errs := gorequest.New().
 		Proxy(gcr.Proxy).
 		Timeout(gcr.HTTPTimeOut).
-		Retry(defaultGoRequestRetry, defaultGoRequestRetryTime).
+		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 		Get(addr).
 		EndBytes()
 	if errs != nil {

@@ -16,13 +16,6 @@ import (
 	"github.com/containers/image/types"
 )
 
-const (
-	ManifestDir    = "manifests"
-	ChangeLog      = "CHANGELOG-%s.md"
-	DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
-)
-
 type DockerHubOption struct {
 	Username string
 	Password string
@@ -31,7 +24,7 @@ type DockerHubOption struct {
 
 func syncDockerHub(image Image, opt DockerHubOption) error {
 	destImage := Image{
-		Repo: "docker.io",
+		Repo: DefaultDockerRepo,
 		User: opt.Username,
 		Name: image.MergeName(),
 		Tag:  image.Tag,

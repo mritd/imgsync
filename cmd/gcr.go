@@ -23,9 +23,9 @@ func init() {
 	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubPassword, "password", "", "docker hub user password")
 	gcrCmd.PersistentFlags().StringVar(&gcr.NameSpace, "namespace", "google-containers", "google container registry namespace")
 	gcrCmd.PersistentFlags().StringVar(&gcr.Proxy, "proxy", "", "http client proxy")
-	gcrCmd.PersistentFlags().IntVar(&gcr.QueryLimit, "querylimit", 50, "http query limit")
-	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", 10, "image process limit")
-	gcrCmd.PersistentFlags().DurationVar(&gcr.HTTPTimeOut, "httptimeout", defaultHTTPTimeout, "http request timeout")
-	gcrCmd.PersistentFlags().DurationVar(&gcr.SyncTimeOut, "synctimeout", defaultSyncTimeout, "docker hub sync timeout")
+	gcrCmd.PersistentFlags().IntVar(&gcr.QueryLimit, "querylimit", core.DefaultLimit, "http query limit")
+	gcrCmd.PersistentFlags().IntVar(&gcr.ProcessLimit, "processlimit", core.DefaultLimit, "image process limit")
+	gcrCmd.PersistentFlags().DurationVar(&gcr.HTTPTimeOut, "httptimeout", core.DefaultHTTPTimeOut, "http request timeout")
+	gcrCmd.PersistentFlags().DurationVar(&gcr.SyncTimeOut, "synctimeout", core.DefaultSyncTimeout, "docker hub sync timeout")
 	gcrCmd.PersistentFlags().BoolVar(&gcr.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
 }
