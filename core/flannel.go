@@ -42,7 +42,6 @@ func (fl *Flannel) Init() *Flannel {
 	}
 
 	if fl.ProcessLimit == 0 {
-		// process limit default 20
 		fl.processLimitCh = make(chan int, DefaultLimit)
 	} else {
 		fl.processLimitCh = make(chan int, fl.ProcessLimit)

@@ -84,10 +84,12 @@ func syncDockerHub(image Image, opt DockerHubOption) error {
 
 func process(image Image, user, password string) {
 	logrus.Debugf("process image: %s", image)
-	err := syncDockerHub(image, DockerHubOption{
-		Username: user,
-		Password: password,
-		Timeout:  10 * time.Minute,
+	err := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
+		return syncDockerHub(image, DockerHubOption{
+			Username: user,
+			Password: password,
+			Timeout:  10 * time.Minute,
+		})
 	})
 	if err != nil {
 		logrus.Errorf("failed to process image %s, error: %s", image, err)

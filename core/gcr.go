@@ -53,14 +53,12 @@ func (gcr *Gcr) Init() *Gcr {
 	}
 
 	if gcr.QueryLimit == 0 {
-		// query limit default 20
 		gcr.queryLimitCh = make(chan int, DefaultLimit)
 	} else {
 		gcr.queryLimitCh = make(chan int, gcr.QueryLimit)
 	}
 
 	if gcr.ProcessLimit == 0 {
-		// process limit default 20
 		gcr.processLimitCh = make(chan int, DefaultLimit)
 	} else {
 		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
@@ -151,7 +149,7 @@ func (gcr *Gcr) images() Images {
 			for _, tag := range tags {
 				if gcr.Kubeadm {
 					imgCh <- Image{
-						Repo: "k8s.gcr.io",
+						Repo: DefaultK8sRepo,
 						Name: tmpImageName,
 						Tag:  tag,
 					}
