@@ -14,13 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	GcrKubeadmImagesTpl     = "https://k8s.gcr.io/v2/tags/list"
-	GcrStandardImagesTpl    = "https://gcr.io/v2/%s/tags/list"
-	GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
-	GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
-)
-
 type Gcr struct {
 	Proxy             string
 	Kubeadm           bool

@@ -71,7 +71,7 @@ func syncDockerHub(image Image, opt DockerHubOption) error {
 		return err
 	}
 
-	storageDir := filepath.Join(ManifestDir, image.Repo, image.Name)
+	storageDir := filepath.Join(DefaultManifestDir, image.Repo, image.Name)
 	// ignore other error
 	if _, err := os.Stat(storageDir); err != nil {
 		if err := os.MkdirAll(storageDir, 0755); err != nil {
