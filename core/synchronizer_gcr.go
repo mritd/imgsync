@@ -1,10 +1,8 @@
 package core
 
 import (
-	"context"
+	"errors"
 	"fmt"
-	"regexp"
-	"sort"
 	"sync"
 	"time"
 
@@ -14,101 +12,38 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Gcr struct {
-	Proxy             string
-	Kubeadm           bool
-	NameSpace         string
-	IgnoreTagRex      string
-	DockerHubUser     string
-	DockerHubPassword string
-	SyncTimeOut       time.Duration
-	HTTPTimeOut       time.Duration
-	QueryLimit        int
-	ProcessLimit      int
+var gcr Gcr
 
-	queryLimitCh   chan int
-	processLimitCh chan int
-	ignoreTagReg   *regexp.Regexp
+type Gcr struct {
+	Proxy          string
+	Kubeadm        bool
+	NameSpace      string
+	DockerUser     string
+	DockerPassword string
+	HTTPTimeOut    time.Duration
+	QueryLimit     int
+
+	queryLimitCh chan int
 }
 
 // init gcr client
-func (gcr *Gcr) Init() *Gcr {
-	if gcr.DockerHubUser == "" || gcr.DockerHubPassword == "" {
-		logrus.Fatal("docker hub user or password is empty")
+func (gcr *Gcr) Default() error {
+	if gcr.DockerUser == "" || gcr.DockerPassword == "" {
+		return errors.New("docker hub user or password is empty")
 	}
 
 	if gcr.NameSpace == "" {
 		gcr.NameSpace = "google-containers"
 	}
 
-	if gcr.SyncTimeOut == 0 {
-		gcr.SyncTimeOut = DefaultSyncTimeout
-	}
-
 	if gcr.HTTPTimeOut == 0 {
 		gcr.HTTPTimeOut = DefaultHTTPTimeOut
 	}
 
-	if gcr.QueryLimit == 0 {
-		gcr.queryLimitCh = make(chan int, DefaultLimit)
-	} else {
-		gcr.queryLimitCh = make(chan int, gcr.QueryLimit)
-	}
-
-	if gcr.ProcessLimit == 0 {
-		gcr.processLimitCh = make(chan int, DefaultLimit)
-	} else {
-		gcr.processLimitCh = make(chan int, gcr.ProcessLimit)
-	}
-
-	if gcr.IgnoreTagRex != "" {
-		r, err := regexp.Compile(gcr.IgnoreTagRex)
-		if err != nil {
-			logrus.Fatalf("failed to build tag ignore regex: %s", err)
-		}
-		gcr.ignoreTagReg = r
-	}
-
-	logrus.Info("init success...")
-
-	return gcr
+	logrus.Info("gcr init success...")
 }
 
-func (gcr *Gcr) Sync() {
-	logrus.Info("starting sync gcr images...")
-
-	gcrImages := gcr.images()
-	sort.Sort(gcrImages)
-	logrus.Infof("Google container registry images total: %d", len(gcrImages))
-
-	ctx, cancel := context.WithTimeout(context.Background(), gcr.SyncTimeOut)
-	defer cancel()
-
-	processWg := new(sync.WaitGroup)
-	processWg.Add(len(gcrImages))
-
-	for _, image := range gcrImages {
-		tmpImage := image
-		if gcr.ignoreTagReg != nil && gcr.ignoreTagReg.FindString(tmpImage.Tag) != "" {
-			continue
-		}
-		go func() {
-			defer func() {
-				<-gcr.processLimitCh
-				processWg.Done()
-			}()
-			select {
-			case gcr.processLimitCh <- 1:
-				process(tmpImage, gcr.DockerHubUser, gcr.DockerHubPassword)
-			case <-ctx.Done():
-			}
-		}()
-	}
-
-	processWg.Wait()
-}
-
-func (gcr *Gcr) images() Images {
+func (gcr *Gcr) Images() Images {
 	publicImageNames := gcr.imageNames()
 
 	logrus.Info("get gcr public image tags...")

@@ -20,8 +20,8 @@ Sync gcr images.`,
 
 func init() {
 	rootCmd.AddCommand(gcrCmd)
-	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubUser, "user", "", "docker hub user")
-	gcrCmd.PersistentFlags().StringVar(&gcr.DockerHubPassword, "password", "", "docker hub user password")
+	gcrCmd.PersistentFlags().StringVar(&gcr.DockerUser, "user", "", "docker hub user")
+	gcrCmd.PersistentFlags().StringVar(&gcr.DockerPassword, "password", "", "docker hub user password")
 	gcrCmd.PersistentFlags().StringVar(&gcr.NameSpace, "namespace", "google-containers", "google container registry namespace")
 	gcrCmd.PersistentFlags().StringVar(&gcr.Proxy, "proxy", "", "http client proxy")
 	gcrCmd.PersistentFlags().StringVar(&gcr.IgnoreTagRex, "ignoretag", "", "ignore image where tag matches regular expression")
