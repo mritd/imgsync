@@ -1,7 +1,7 @@
 package core
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -15,32 +15,11 @@ import (
 var gcr Gcr
 
 type Gcr struct {
-	Proxy          string
-	Kubeadm        bool
-	NameSpace      string
-	DockerUser     string
-	DockerPassword string
-	HTTPTimeOut    time.Duration
-	QueryLimit     int
+	Kubeadm     bool
+	NameSpace   string
+	HTTPTimeOut time.Duration
 
 	queryLimitCh chan int
-}
-
-// init gcr client
-func (gcr *Gcr) Default() error {
-	if gcr.DockerUser == "" || gcr.DockerPassword == "" {
-		return errors.New("docker hub user or password is empty")
-	}
-
-	if gcr.NameSpace == "" {
-		gcr.NameSpace = "google-containers"
-	}
-
-	if gcr.HTTPTimeOut == 0 {
-		gcr.HTTPTimeOut = DefaultHTTPTimeOut
-	}
-
-	logrus.Info("gcr init success...")
 }
 
 func (gcr *Gcr) Images() Images {
@@ -53,59 +32,46 @@ func (gcr *Gcr) Images() Images {
 	imgGetWg.Add(len(publicImageNames))
 
 	for _, imageName := range publicImageNames {
-		tmpImageName := imageName
-		go func() {
+		go func(imageName string) {
 			defer func() {
 				<-gcr.queryLimitCh
 				imgGetWg.Done()
 			}()
 
+			var iName string
+			if gcr.Kubeadm {
+				iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, DefaultGcrNamespace, imageName)
+			} else {
+				iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, gcr.NameSpace, imageName)
+			}
+
 			gcr.queryLimitCh <- 1
 
-			var addr string
-			if gcr.Kubeadm {
-				addr = fmt.Sprintf(GcrKubeadmImageTagsTpl, tmpImageName)
-			} else {
-				addr = fmt.Sprintf(GcrStandardImageTagsTpl, gcr.NameSpace, tmpImageName)
-			}
-
-			logrus.Debugf("get gcr image tags, address: %s", addr)
-			resp, body, errs := gorequest.New().
-				Proxy(gcr.Proxy).
-				Timeout(gcr.HTTPTimeOut).
-				Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
-				Get(addr).
-				EndBytes()
-			if errs != nil {
-				logrus.Errorf("failed to get gcr image tags, address: %s, error: %s", addr, errs)
-				return
-			}
-			defer func() { _ = resp.Body.Close() }()
-
-			var tags []string
-			err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
+			logrus.Debugf("query image [%s] tags...", iName)
+			tags, err := getImageTags(iName, TagsOption{Timeout: 10 * time.Second})
 			if err != nil {
-				logrus.Errorf("failed to get gcr image tags, address: %s, error: %s", addr, err)
+				logrus.Errorf("failed to get image [%s] tags, error: %s", iName, err)
 				return
 			}
+			logrus.Debugf("image [%s] tags count: %d", iName, len(tags))
 
 			for _, tag := range tags {
 				if gcr.Kubeadm {
 					imgCh <- Image{
 						Repo: DefaultK8sRepo,
-						Name: tmpImageName,
+						Name: imageName,
 						Tag:  tag,
 					}
 				} else {
 					imgCh <- Image{
-						Repo: "gcr.io",
+						Repo: DefaultGcrRepo,
 						User: gcr.NameSpace,
-						Name: tmpImageName,
+						Name: imageName,
 						Tag:  tag,
 					}
 				}
 			}
-		}()
+		}(imageName)
 	}
 
 	var images Images
@@ -131,7 +97,6 @@ func (gcr *Gcr) imageNames() []string {
 	}
 
 	resp, body, errs := gorequest.New().
-		Proxy(gcr.Proxy).
 		Timeout(gcr.HTTPTimeOut).
 		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 		Get(addr).
@@ -147,4 +112,18 @@ func (gcr *Gcr) imageNames() []string {
 		logrus.Fatalf("failed to get gcr images, address: %s, error: %s", addr, err)
 	}
 	return imageNames
+}
+
+func (gcr *Gcr) Sync(ctx context.Context, opt SyncOption) {
+	gcrImages := gcr.setDefault(opt).Images()
+	logrus.Infof("sync images count: %d", len(gcrImages))
+	syncImages(ctx, gcrImages, opt)
+}
+
+func (gcr *Gcr) setDefault(opt SyncOption) *Gcr {
+	gcr.Kubeadm = opt.Kubeadm
+	gcr.queryLimitCh = make(chan int, opt.QueryLimit)
+	gcr.NameSpace = opt.NameSpace
+	gcr.HTTPTimeOut = opt.Timeout
+	return gcr
 }

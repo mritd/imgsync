@@ -6,61 +6,52 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
-	"github.com/containers/image/copy"
-	"github.com/containers/image/docker"
-	"github.com/containers/image/manifest"
-	"github.com/containers/image/signature"
-	"github.com/containers/image/types"
+	"github.com/containers/image/v5/copy"
+	"github.com/containers/image/v5/docker"
+	"github.com/containers/image/v5/manifest"
+	"github.com/containers/image/v5/signature"
+	"github.com/containers/image/v5/types"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Synchronizer interface {
-	Default() error
 	Images() Images
+	Sync(ctx context.Context, opt SyncOption)
 }
 
 type SyncOption struct {
-	Timeout  time.Duration
-	Limit    int
-	User     string
-	Password string
+	Timeout    time.Duration
+	Limit      int
+	User       string
+	Password   string
+	NameSpace  string
+	Proxy      string
+	QueryLimit int
+	Kubeadm    bool
 }
 
-type ManifestOption struct {
+type TagsOption struct {
 	Timeout time.Duration
-	Limit   int
 }
 
 func New(name string) (Synchronizer, error) {
 	switch name {
 	case "gcr":
-		gcr.Kubeadm = false
-		if err := gcr.Default(); err != nil {
-			return nil, err
-		}
 		return &gcr, nil
 	case "flannel":
-		if err := fl.Default(); err != nil {
-			return nil, err
-		}
+		fl.Default()
 		return &fl, nil
-	case "kubernetes":
-		gcr.Kubeadm = true
-		if err := gcr.Default(); err != nil {
-			return nil, err
-		}
-		return &gcr, nil
 	}
-
 	return nil, fmt.Errorf("failed to create synchronizer %s: unknown synchronizer", name)
 }
 
 func syncImages(ctx context.Context, images Images, opt SyncOption) {
-	logrus.Info("starting sync images, image total: %d", len(images))
+	logrus.Infof("starting sync images, image total: %d", len(images))
 
 	processWg := new(sync.WaitGroup)
 	processWg.Add(len(images))
@@ -71,31 +62,43 @@ func syncImages(ctx context.Context, images Images, opt SyncOption) {
 	limitCh := make(chan int, opt.Limit)
 	defer close(limitCh)
 
+	sort.Sort(images)
 	for _, image := range images {
-		tmpImage := image
-		go func() {
+		go func(image Image) {
 			defer func() {
 				<-limitCh
 				processWg.Done()
 			}()
 			select {
 			case limitCh <- 1:
-				logrus.Debugf("process image: %s", tmpImage)
-				err := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
-					return sync2DockerHub(tmpImage, opt)
+				logrus.Debugf("process image: %s", image)
+				m, err := getImageManifest(image.String())
+				if err != nil {
+					logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
+					return
+				}
+				sm, ok := manifestsMap[image.String()]
+				if ok && m == sm {
+					logrus.Warnf("image [%s] not changed, skip sync...", image.String())
+					return
+				}
+
+				err = retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
+					return sync2DockerHub(&image, opt)
 				})
 				if err != nil {
-					logrus.Errorf("failed to process image %s, error: %s", tmpImage, err)
+					logrus.Errorf("failed to process image %s, error: %s", image.String(), err)
 				}
 			case <-ctx.Done():
 			}
-		}()
+		}(image)
 	}
 
 	processWg.Wait()
 }
 
-func sync2DockerHub(image Image, opt SyncOption) error {
+func sync2DockerHub(image *Image, opt SyncOption) error {
+
 	destImage := Image{
 		Repo: DefaultDockerRepo,
 		User: opt.User,
@@ -103,7 +106,7 @@ func sync2DockerHub(image Image, opt SyncOption) error {
 		Tag:  image.Tag,
 	}
 
-	logrus.Infof("sync %s => %s", image, destImage)
+	logrus.Infof("sync %s => %s", image, destImage.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer cancel()
@@ -134,7 +137,7 @@ func sync2DockerHub(image Image, opt SyncOption) error {
 	}}
 
 	m, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
-		ReportWriter:          ioutil.Discard,
+		ReportWriter:          os.Stdout,
 		SourceCtx:             sourceCtx,
 		DestinationCtx:        destinationCtx,
 		ProgressInterval:      1 * time.Second,
@@ -143,8 +146,7 @@ func sync2DockerHub(image Image, opt SyncOption) error {
 	if err != nil {
 		return err
 	}
-
-	storageDir := filepath.Join(DefaultManifestDir, image.Repo, image.Name)
+	storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
 	// ignore other error
 	if _, err := os.Stat(storageDir); err != nil {
 		if err := os.MkdirAll(storageDir, 0755); err != nil {
@@ -155,81 +157,33 @@ func sync2DockerHub(image Image, opt SyncOption) error {
 	return ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), m, 0644)
 }
 
-func getManifests(ctx context.Context, images Images, opt ManifestOption) Manifests {
-	logrus.Infof("starting get image manifests, image total: %d", len(images))
-
-	processWg := new(sync.WaitGroup)
-	processWg.Add(len(images))
-
-	if opt.Limit == 0 {
-		opt.Limit = DefaultLimit
-	}
-	limitCh := make(chan Manifest, opt.Limit)
-
-	var ms Manifests
-
-	for _, image := range images {
-		tmpImage := image
-		go func() {
-			defer func() {
-				<-limitCh
-				processWg.Done()
-			}()
-
-			logrus.Debugf("process image: %s", tmpImage)
-			err := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
-				if m, err := getImageManifest(tmpImage, opt); err != nil {
-					return err
-				} else {
-					select {
-					case limitCh <- m:
-					case <-ctx.Done():
-					}
-					return nil
-				}
-
-			})
-			if err != nil {
-				logrus.Errorf("failed to process image %s, error: %s", tmpImage, err)
-			}
-		}()
-	}
-
-	go func() {
-		for m := range limitCh {
-			ms = append(ms, m)
-		}
-	}()
-
-	processWg.Wait()
-	close(limitCh)
-	return ms
-}
-
-func getImageManifest(image Image, opt ManifestOption) (Manifest, error) {
-	imgSrcCtx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
-	defer cancel()
-
-	srcRef, err := docker.Transport.ParseReference("//" + image.String())
+func getImageManifest(imageName string) (Manifest, error) {
+	srcRef, err := docker.Transport.ParseReference("//" + imageName)
 	if err != nil {
-		logrus.Fatal(err)
+		return "", err
 	}
 
 	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
-	src, err := srcRef.NewImageSource(imgSrcCtx, sourceCtx)
+	src, err := srcRef.NewImageSource(context.Background(), sourceCtx)
 	if err != nil {
-		logrus.Fatal(err)
+		return "", err
 	}
 
-	manifestCtx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
-	defer cancel()
-
-	bs, _, err := src.GetManifest(manifestCtx, nil)
+	bs, _, err := src.GetManifest(context.Background(), nil)
 	if err != nil {
-		return Manifest{}, err
+		return "", err
 	}
-	return Manifest{
-		Name:      image.String(),
-		JSONValue: string(bs),
-	}, nil
+	return Manifest(bs), nil
+}
+
+func getImageTags(imageName string, opt TagsOption) ([]string, error) {
+	srcRef, err := docker.Transport.ParseReference("//" + imageName)
+	if err != nil {
+		return nil, err
+	}
+	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
+	tagsCtx, tagsCancel := context.WithTimeout(context.Background(), opt.Timeout)
+	defer tagsCancel()
+
+	return docker.GetRepositoryTags(tagsCtx, sourceCtx, srcRef)
 }

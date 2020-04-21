@@ -1,19 +1,11 @@
 package core
 
 import (
-	"errors"
+	"context"
+	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
-
-	"github.com/parnurzeal/gorequest"
-
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	// only sync the last 100 images
-	FlannelImagesTpl = "https://quay.io/api/v1/repository/coreos/flannel/tag/?limit=100&page=1&onlyActiveTags=true"
 )
 
 var fl Flannel
@@ -25,11 +17,7 @@ type Flannel struct {
 	HTTPTimeOut    time.Duration
 }
 
-func (fl *Flannel) Default() error {
-	if fl.DockerUser == "" || fl.DockerPassword == "" {
-		return errors.New("docker hub user or password is empty")
-	}
-
+func (fl *Flannel) Default() {
 	if fl.HTTPTimeOut == 0 {
 		fl.HTTPTimeOut = DefaultHTTPTimeOut
 	}
@@ -38,39 +26,29 @@ func (fl *Flannel) Default() error {
 }
 
 func (fl *Flannel) Images() Images {
-	logrus.Debugf("get flannel images, address: %s", FlannelImagesTpl)
-	resp, body, errs := gorequest.New().
-		Proxy(fl.Proxy).
-		Timeout(fl.HTTPTimeOut).
-		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
-		Get(FlannelImagesTpl).
-		EndBytes()
-	if errs != nil {
-		logrus.Fatalf("failed to get flannel images, error: %s", errs)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	var tags []struct {
-		Name string `json:"name"`
-	}
-	err := jsoniter.UnmarshalFromString(jsoniter.Get(body, "tags").ToString(), &tags)
+	logrus.Infof("get flannel image tags")
+	tags, err := getImageTags(FlannelImageName, TagsOption{Timeout: 10 * time.Second})
 	if err != nil {
-		logrus.Fatalf("failed to get flannel image tags, address: %s, error: %s", FlannelImagesTpl, err)
+		logrus.Errorf("failed to get [%s] image tags, error: %s", FlannelImageName, err)
+		return nil
 	}
 
 	var images Images
+	ss := strings.Split(FlannelImageName, "/")
 	for _, tag := range tags {
 		images = append(images, Image{
-			Repo: "quay.io",
-			User: "coreos",
-			Name: "flannel",
-			Tag:  tag.Name,
+			Repo: ss[0],
+			User: ss[1],
+			Name: ss[2],
+			Tag:  tag,
 		})
 	}
 
 	return images
 }
 
-func (fl *Flannel) Sync() {
-
+func (fl *Flannel) Sync(ctx context.Context, opt SyncOption) {
+	flImages := fl.Images()
+	logrus.Infof("sync images count: %d", len(flImages))
+	syncImages(ctx, flImages, opt)
 }

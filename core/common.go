@@ -4,27 +4,33 @@ import "time"
 
 const (
 	DefaultLimit              = 20
-	DefaultHTTPTimeOut        = 10 * time.Second
+	DefaultHTTPTimeOut        = 30 * time.Second
 	DefaultSyncTimeout        = 1 * time.Hour
 	DefaultGoRequestRetry     = 3
 	DefaultGoRequestRetryTime = 5 * time.Second
 	DefaultDockerRepo         = "docker.io"
 	DefaultK8sRepo            = "k8s.gcr.io"
-	DefaultManifestDir        = "manifests"
+	DefaultGcrRepo            = "gcr.io"
+	DefaultGcrNamespace       = "google-containers"
 
 	GcrKubeadmImagesTpl     = "https://k8s.gcr.io/v2/tags/list"
 	GcrStandardImagesTpl    = "https://gcr.io/v2/%s/tags/list"
 	GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
 	GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
-	GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
-	GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
+	//GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
+	//GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
 
-	ChangeLog      = "CHANGELOG-%s.md"
-	DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	ChangeLog = "CHANGELOG-%s.md"
+	//DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
+	//DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	FlannelImageName = "quay.io/coreos/flannel"
 
 	defaultSyncRetry     = 3
 	defaultSyncRetryTime = 10 * time.Second
+)
+
+var (
+	ManifestDir = "manifests"
 )
 
 func retry(count int, interval time.Duration, f func() error) error {

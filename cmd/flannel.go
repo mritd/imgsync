@@ -1,29 +1,43 @@
 package cmd
 
 import (
+	"context"
+	"time"
+
 	"github.com/mritd/imgsync/core"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var flannel core.Flannel
+var flTimeout time.Duration
+var flSyncOption core.SyncOption
 
 var flannelCmd = &cobra.Command{
 	Use:   "flannel",
 	Short: "Sync flannel images",
 	Long: `
 Sync flannel images.`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if err := core.LoadManifests(); err != nil {
+			logrus.Fatalf("failed to load manifests: %s", err)
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		flannel.Init().Sync()
+		s, err := core.New("flannel")
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), gcrTimeout)
+		defer cancel()
+		s.Sync(ctx, gcrSyncOption)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(flannelCmd)
-	flannelCmd.PersistentFlags().StringVar(&flannel.DockerUser, "user", "", "docker hub user")
-	flannelCmd.PersistentFlags().StringVar(&flannel.DockerPassword, "password", "", "docker hub user password")
-	flannelCmd.PersistentFlags().StringVar(&flannel.Proxy, "proxy", "", "http client proxy")
-	flannelCmd.PersistentFlags().StringVar(&flannel.IgnoreTagRex, "ignoretag", "", "ignore image where tag matches regular expression")
-	flannelCmd.PersistentFlags().IntVar(&flannel.ProcessLimit, "processlimit", core.DefaultLimit, "image process limit")
-	flannelCmd.PersistentFlags().DurationVar(&flannel.HTTPTimeOut, "httptimeout", core.DefaultHTTPTimeOut, "http request timeout")
-	flannelCmd.PersistentFlags().DurationVar(&flannel.SyncTimeOut, "synctimeout", core.DefaultSyncTimeout, "docker hub sync timeout")
+	flannelCmd.PersistentFlags().StringVar(&flSyncOption.User, "user", "", "docker hub user")
+	flannelCmd.PersistentFlags().StringVar(&flSyncOption.Password, "password", "", "docker hub user password")
+	flannelCmd.PersistentFlags().StringVar(&flSyncOption.Proxy, "proxy", "", "http client proxy")
+	flannelCmd.PersistentFlags().DurationVar(&flSyncOption.Timeout, "httptimeout", core.DefaultHTTPTimeOut, "http request timeout")
+	flannelCmd.PersistentFlags().DurationVar(&flTimeout, "timeout", core.DefaultSyncTimeout, "docker hub sync timeout")
 }
