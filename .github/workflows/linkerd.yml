@@ -7,7 +7,6 @@ on:
     branches: [ wip ]
 
 jobs:
-
   build:
     name: Build imgsync
     runs-on: ubuntu-latest
