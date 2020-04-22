@@ -30,7 +30,7 @@ Sync gcr images.`,
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), gcrTimeout)
 		defer cancel()
-		s.Sync(ctx, gcrSyncOption)
+		s.Sync(ctx, &gcrSyncOption)
 	},
 }
 
