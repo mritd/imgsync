@@ -11,16 +11,13 @@ jobs:
     name: Build imgsync
     runs-on: ubuntu-latest
     steps:
-
     - name: Set up Go 1.14
       uses: actions/setup-go@v2
       with:
         go-version: 1.14
       id: go
-
     - name: Check out code
       uses: actions/checkout@v2
-
     - name: Cache go mod
       uses: actions/cache@v1
       with:
@@ -28,16 +25,13 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-
     - name: Build binary file
       run: make bin
-
     - name: Upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: imgsync
         path: imgsync
-
   sync_k8s:
     name: Sync k8s.gcr.io
     needs: build
@@ -48,7 +42,6 @@ jobs:
         with:
           name: imgsync
           path: ./imgsync
-
       - name: Sync k8s.gcr.io images
         env:
           TZ: Asia/Shanghai
