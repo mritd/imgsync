@@ -26,7 +26,7 @@ type Synchronizer interface {
 type SyncOption struct {
 	User     string        // Docker Hub User
 	Password string        // Docker Hub User Password
-	Timeout  time.Duration // Single image sync timeout
+	Timeout  time.Duration // Sync single image timeout
 	Limit    int           // Images sync process limit
 
 	QueryLimit int    // Query Gcr images limit

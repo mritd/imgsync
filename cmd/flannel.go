@@ -22,6 +22,6 @@ func init() {
 	rootCmd.AddCommand(flannelCmd)
 	flannelCmd.PersistentFlags().StringVar(&flSyncOption.User, "user", "", "docker hub user")
 	flannelCmd.PersistentFlags().StringVar(&flSyncOption.Password, "password", "", "docker hub user password")
-	flannelCmd.PersistentFlags().DurationVar(&flSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "single image sync timeout")
+	flannelCmd.PersistentFlags().DurationVar(&flSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	flannelCmd.PersistentFlags().IntVar(&flSyncOption.Limit, "processlimit", core.DefaultLimit, "sync image limit")
 }

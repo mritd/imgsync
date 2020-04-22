@@ -25,6 +25,6 @@ func init() {
 	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.NameSpace, "namespace", "google-containers", "google container registry namespace")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.QueryLimit, "querylimit", core.DefaultLimit, "http query limit")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.Limit, "processlimit", core.DefaultLimit, "sync image limit")
-	gcrCmd.PersistentFlags().DurationVar(&gcrSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "single image sync timeout")
+	gcrCmd.PersistentFlags().DurationVar(&gcrSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
 }
