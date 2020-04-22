@@ -26,6 +26,8 @@ const (
 	// DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 	FlannelImageName = "quay.io/coreos/flannel"
 
+	ErrManifestNotImplemented = "Treating manifest lists as individual manifests is not implemented"
+
 	defaultSyncRetry     = 3
 	defaultSyncRetryTime = 10 * time.Second
 )

@@ -5,9 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/containers/image/v5/copy"
 	"github.com/containers/image/v5/docker"
@@ -73,16 +76,27 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 			select {
 			case limitCh <- 1:
 				logrus.Debugf("process image: %s", image)
+
+				var notImplemented bool // notImplemented is used to control that unrecognized manifests are always synchronized
 				m, err := getImageManifest(image.String())
 				if err != nil {
-					logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
-					return
+					// ignore err
+					// refs github.com/containers/image/v5@v5.4.3/manifest/manifest.go:253
+					if err.Error() != ErrManifestNotImplemented {
+						logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
+						return
+					}
+					notImplemented = true
 				}
 				sm, ok := manifestsMap[image.String()]
-				if ok && m == sm {
+				if !notImplemented && ok && reflect.DeepEqual(m, sm) {
 					logrus.Warnf("image [%s] not changed, skip sync...", image.String())
 					return
 				}
+
+				//ms, _ := jsoniter.MarshalIndent(m, "", "    ")
+				//sms, _ := jsoniter.MarshalIndent(sm, "", "    ")
+				//logrus.Infof("%s\n##########################################\n%s###############################################\n%s", image.String(), string(ms), string(sms))
 
 				err = retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
 					return sync2DockerHub(&image, opt)
@@ -90,6 +104,24 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 				if err != nil {
 					logrus.Errorf("failed to process image %s, error: %s", image.String(), err)
 				}
+
+				if !notImplemented {
+					storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
+					// ignore other error
+					if _, err := os.Stat(storageDir); err != nil {
+						if err := os.MkdirAll(storageDir, 0755); err != nil {
+							logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+						}
+					}
+					bs, err := jsoniter.MarshalIndent(m, "", "    ")
+					if err != nil {
+						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+					}
+					if err := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); err != nil {
+						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+					}
+				}
+
 			case <-ctx.Done():
 			}
 		}(image)
@@ -136,46 +168,12 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 		Password: opt.Password,
 	}}
 
-	m, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
+	_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
 		SourceCtx:             sourceCtx,
 		DestinationCtx:        destinationCtx,
 		ForceManifestMIMEType: manifest.DockerV2Schema2MediaType,
 	})
-	if err != nil {
-		return err
-	}
-	storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
-	// ignore other error
-	if _, err := os.Stat(storageDir); err != nil {
-		if err := os.MkdirAll(storageDir, 0755); err != nil {
-			return err
-		}
-	}
-
-	return ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), m, 0644)
-}
-
-func getImageManifest(imageName string) (Manifest, error) {
-	srcRef, err := docker.Transport.ParseReference("//" + imageName)
-	if err != nil {
-		return "", err
-	}
-
-	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
-	imageSrcCtx, imageSrcCancel := context.WithTimeout(context.Background(), DefaultCtxTimeout)
-	defer imageSrcCancel()
-	src, err := srcRef.NewImageSource(imageSrcCtx, sourceCtx)
-	if err != nil {
-		return "", err
-	}
-
-	getManifestCtx, getManifestCancel := context.WithTimeout(context.Background(), DefaultCtxTimeout)
-	defer getManifestCancel()
-	bs, _, err := src.GetManifest(getManifestCtx, nil)
-	if err != nil {
-		return "", err
-	}
-	return Manifest(bs), nil
+	return err
 }
 
 func getImageTags(imageName string, opt TagsOption) ([]string, error) {

@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 
 	"github.com/mritd/imgsync/core"
 
@@ -75,13 +72,14 @@ func prerun(_ *cobra.Command, _ []string) {
 }
 
 func boot(name string) {
-	sigs := make(chan os.Signal)
+	//sigs := make(chan os.Signal)
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		<-sigs
-		logrus.Infof("Receiving a termination signal, gracefully shut down!")
-		cancel()
-	}()
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+	//go func() {
+	//	<-sigs
+	//	logrus.Infof("Receiving a termination signal, gracefully shut down!")
+	//	cancel()
+	//}()
+	//signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	core.NewSynchronizer(name).Sync(ctx, &gcrSyncOption)
 }
