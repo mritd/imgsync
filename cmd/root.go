@@ -1,9 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
+
+	"github.com/mritd/imgsync/core"
 
 	"github.com/sirupsen/logrus"
 
@@ -60,4 +66,22 @@ CommitID: %s
 
 	banner, _ := base64.StdEncoding.DecodeString(bannerBase64)
 	return fmt.Sprintf(tpl, banner, version, runtime.GOOS+"/"+runtime.GOARCH, buildTime, commit)
+}
+
+func prerun(_ *cobra.Command, _ []string) {
+	if err := core.LoadManifests(); err != nil {
+		logrus.Fatalf("failed to load manifests: %s", err)
+	}
+}
+
+func boot(name string) {
+	sigs := make(chan os.Signal)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-sigs
+		logrus.Infof("Receiving a termination signal, gracefully shut down!")
+		cancel()
+	}()
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	core.NewSynchronizer(name).Sync(ctx, &gcrSyncOption)
 }

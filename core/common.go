@@ -4,8 +4,9 @@ import "time"
 
 const (
 	DefaultLimit              = 20
-	DefaultHTTPTimeOut        = 30 * time.Second
-	DefaultSyncTimeout        = 1 * time.Hour
+	DefaultSyncTimeout        = 10 * time.Minute
+	DefaultCtxTimeout         = 30 * time.Second
+	DefaultHTTPTimeout        = 30 * time.Second
 	DefaultGoRequestRetry     = 3
 	DefaultGoRequestRetryTime = 5 * time.Second
 	DefaultDockerRepo         = "docker.io"

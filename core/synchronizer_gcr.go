@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/parnurzeal/gorequest"
 
@@ -15,10 +14,8 @@ import (
 var gcr Gcr
 
 type Gcr struct {
-	Kubeadm   bool
-	NameSpace string
-	TimeOut   time.Duration
-
+	kubeadm      bool
+	namespace    string
 	queryLimitCh chan int
 }
 
@@ -39,16 +36,16 @@ func (gcr *Gcr) Images() Images {
 			}()
 
 			var iName string
-			if gcr.Kubeadm {
+			if gcr.kubeadm {
 				iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, DefaultGcrNamespace, imageName)
 			} else {
-				iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, gcr.NameSpace, imageName)
+				iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, gcr.namespace, imageName)
 			}
 
 			gcr.queryLimitCh <- 1
 
 			logrus.Debugf("query image [%s] tags...", iName)
-			tags, err := getImageTags(iName, TagsOption{Timeout: 10 * time.Second})
+			tags, err := getImageTags(iName, TagsOption{Timeout: DefaultCtxTimeout})
 			if err != nil {
 				logrus.Errorf("failed to get image [%s] tags, error: %s", iName, err)
 				return
@@ -56,7 +53,7 @@ func (gcr *Gcr) Images() Images {
 			logrus.Debugf("image [%s] tags count: %d", iName, len(tags))
 
 			for _, tag := range tags {
-				if gcr.Kubeadm {
+				if gcr.kubeadm {
 					imgCh <- Image{
 						Repo: DefaultK8sRepo,
 						Name: imageName,
@@ -65,7 +62,7 @@ func (gcr *Gcr) Images() Images {
 				} else {
 					imgCh <- Image{
 						Repo: DefaultGcrRepo,
-						User: gcr.NameSpace,
+						User: gcr.namespace,
 						Name: imageName,
 						Tag:  tag,
 					}
@@ -90,14 +87,14 @@ func (gcr *Gcr) imageNames() []string {
 	logrus.Info("get gcr public images...")
 
 	var addr string
-	if gcr.Kubeadm {
+	if gcr.kubeadm {
 		addr = GcrKubeadmImagesTpl
 	} else {
-		addr = fmt.Sprintf(GcrStandardImagesTpl, gcr.NameSpace)
+		addr = fmt.Sprintf(GcrStandardImagesTpl, gcr.namespace)
 	}
 
 	resp, body, errs := gorequest.New().
-		Timeout(gcr.TimeOut).
+		Timeout(DefaultHTTPTimeout).
 		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 		Get(addr).
 		EndBytes()
@@ -121,9 +118,8 @@ func (gcr *Gcr) Sync(ctx context.Context, opt *SyncOption) {
 }
 
 func (gcr *Gcr) setDefault(opt *SyncOption) *Gcr {
-	gcr.Kubeadm = opt.Kubeadm
+	gcr.kubeadm = opt.Kubeadm
 	gcr.queryLimitCh = make(chan int, opt.QueryLimit)
-	gcr.NameSpace = opt.NameSpace
-	gcr.TimeOut = opt.Timeout
+	gcr.namespace = opt.NameSpace
 	return gcr
 }

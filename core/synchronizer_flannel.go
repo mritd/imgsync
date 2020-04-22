@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -11,13 +10,11 @@ import (
 var fl Flannel
 
 type Flannel struct {
-	Proxy   string
-	TimeOut time.Duration
 }
 
 func (fl *Flannel) Images() Images {
 	logrus.Infof("get flannel image tags")
-	tags, err := getImageTags(FlannelImageName, TagsOption{Timeout: 10 * time.Second})
+	tags, err := getImageTags(FlannelImageName, TagsOption{Timeout: DefaultCtxTimeout})
 	if err != nil {
 		logrus.Errorf("failed to get [%s] image tags, error: %s", FlannelImageName, err)
 		return nil
@@ -43,7 +40,6 @@ func (fl *Flannel) Sync(ctx context.Context, opt *SyncOption) {
 	syncImages(ctx, flImages, opt)
 }
 
-func (fl *Flannel) setDefault(opt *SyncOption) *Flannel {
-	fl.TimeOut = opt.Timeout
+func (fl *Flannel) setDefault(_ *SyncOption) *Flannel {
 	return fl
 }

@@ -2,9 +2,9 @@ name: Sync Distroless
 
 on:
   push:
-    branches: [ master ]
+    branches: [ wip ]
   pull_request:
-    branches: [ master ]
+    branches: [ wip ]
 
 jobs:
 

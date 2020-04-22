@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -25,28 +24,31 @@ type Synchronizer interface {
 }
 
 type SyncOption struct {
-	Timeout    time.Duration
-	Limit      int
-	User       string
-	Password   string
-	NameSpace  string
-	Proxy      string
-	QueryLimit int
-	Kubeadm    bool
+	User     string        // Docker Hub User
+	Password string        // Docker Hub User Password
+	Timeout  time.Duration // Single image sync timeout
+	Limit    int           // Images sync process limit
+
+	QueryLimit int    // Query Gcr images limit
+	NameSpace  string // Gcr image namespace
+	Kubeadm    bool   // Sync kubeadm images (change gcr.io to k8s.gcr.io, and remove namespace)
 }
 
 type TagsOption struct {
 	Timeout time.Duration
 }
 
-func New(name string) (Synchronizer, error) {
+func NewSynchronizer(name string) Synchronizer {
 	switch name {
 	case "gcr":
-		return &gcr, nil
+		return &gcr
 	case "flannel":
-		return &fl, nil
+		return &fl
+	default:
+		logrus.Fatalf("failed to create synchronizer %s: unknown synchronizer", name)
+		// just for compiling
+		return nil
 	}
-	return nil, fmt.Errorf("failed to create synchronizer %s: unknown synchronizer", name)
 }
 
 func syncImages(ctx context.Context, images Images, opt *SyncOption) {
@@ -160,12 +162,16 @@ func getImageManifest(imageName string) (Manifest, error) {
 	}
 
 	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
-	src, err := srcRef.NewImageSource(context.Background(), sourceCtx)
+	imageSrcCtx, imageSrcCancel := context.WithTimeout(context.Background(), DefaultCtxTimeout)
+	defer imageSrcCancel()
+	src, err := srcRef.NewImageSource(imageSrcCtx, sourceCtx)
 	if err != nil {
 		return "", err
 	}
 
-	bs, _, err := src.GetManifest(context.Background(), nil)
+	getManifestCtx, getManifestCancel := context.WithTimeout(context.Background(), DefaultCtxTimeout)
+	defer getManifestCancel()
+	bs, _, err := src.GetManifest(getManifestCtx, nil)
 	if err != nil {
 		return "", err
 	}
