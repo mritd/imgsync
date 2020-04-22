@@ -21,7 +21,7 @@ import (
 
 type Synchronizer interface {
 	Images() Images
-	Sync(ctx context.Context, opt SyncOption)
+	Sync(ctx context.Context, opt *SyncOption)
 }
 
 type SyncOption struct {
@@ -44,13 +44,12 @@ func New(name string) (Synchronizer, error) {
 	case "gcr":
 		return &gcr, nil
 	case "flannel":
-		fl.Default()
 		return &fl, nil
 	}
 	return nil, fmt.Errorf("failed to create synchronizer %s: unknown synchronizer", name)
 }
 
-func syncImages(ctx context.Context, images Images, opt SyncOption) {
+func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 	logrus.Infof("starting sync images, image total: %d", len(images))
 
 	processWg := new(sync.WaitGroup)
@@ -97,8 +96,7 @@ func syncImages(ctx context.Context, images Images, opt SyncOption) {
 	processWg.Wait()
 }
 
-func sync2DockerHub(image *Image, opt SyncOption) error {
-
+func sync2DockerHub(image *Image, opt *SyncOption) error {
 	destImage := Image{
 		Repo: DefaultDockerRepo,
 		User: opt.User,
@@ -137,10 +135,8 @@ func sync2DockerHub(image *Image, opt SyncOption) error {
 	}}
 
 	m, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
-		ReportWriter:          os.Stdout,
 		SourceCtx:             sourceCtx,
 		DestinationCtx:        destinationCtx,
-		ProgressInterval:      1 * time.Second,
 		ForceManifestMIMEType: manifest.DockerV2Schema2MediaType,
 	})
 	if err != nil {

@@ -11,18 +11,8 @@ import (
 var fl Flannel
 
 type Flannel struct {
-	Proxy          string
-	DockerUser     string
-	DockerPassword string
-	HTTPTimeOut    time.Duration
-}
-
-func (fl *Flannel) Default() {
-	if fl.HTTPTimeOut == 0 {
-		fl.HTTPTimeOut = DefaultHTTPTimeOut
-	}
-
-	logrus.Info("flannel init success...")
+	Proxy   string
+	TimeOut time.Duration
 }
 
 func (fl *Flannel) Images() Images {
@@ -47,8 +37,13 @@ func (fl *Flannel) Images() Images {
 	return images
 }
 
-func (fl *Flannel) Sync(ctx context.Context, opt SyncOption) {
-	flImages := fl.Images()
+func (fl *Flannel) Sync(ctx context.Context, opt *SyncOption) {
+	flImages := fl.setDefault(opt).Images()
 	logrus.Infof("sync images count: %d", len(flImages))
 	syncImages(ctx, flImages, opt)
+}
+
+func (fl *Flannel) setDefault(opt *SyncOption) *Flannel {
+	fl.TimeOut = opt.Timeout
+	return fl
 }

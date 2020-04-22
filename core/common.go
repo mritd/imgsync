@@ -13,16 +13,16 @@ const (
 	DefaultGcrRepo            = "gcr.io"
 	DefaultGcrNamespace       = "google-containers"
 
-	GcrKubeadmImagesTpl     = "https://k8s.gcr.io/v2/tags/list"
-	GcrStandardImagesTpl    = "https://gcr.io/v2/%s/tags/list"
-	GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
-	GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
-	//GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
-	//GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
+	GcrKubeadmImagesTpl  = "https://k8s.gcr.io/v2/tags/list"
+	GcrStandardImagesTpl = "https://gcr.io/v2/%s/tags/list"
+	// GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
+	// GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
+	// GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
+	// GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
 
-	ChangeLog = "CHANGELOG-%s.md"
-	//DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	//DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	// ChangeLog = "CHANGELOG-%s.md"
+	// DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
+	// DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 	FlannelImageName = "quay.io/coreos/flannel"
 
 	defaultSyncRetry     = 3

@@ -15,9 +15,9 @@ import (
 var gcr Gcr
 
 type Gcr struct {
-	Kubeadm     bool
-	NameSpace   string
-	HTTPTimeOut time.Duration
+	Kubeadm   bool
+	NameSpace string
+	TimeOut   time.Duration
 
 	queryLimitCh chan int
 }
@@ -97,7 +97,7 @@ func (gcr *Gcr) imageNames() []string {
 	}
 
 	resp, body, errs := gorequest.New().
-		Timeout(gcr.HTTPTimeOut).
+		Timeout(gcr.TimeOut).
 		Retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime).
 		Get(addr).
 		EndBytes()
@@ -114,16 +114,16 @@ func (gcr *Gcr) imageNames() []string {
 	return imageNames
 }
 
-func (gcr *Gcr) Sync(ctx context.Context, opt SyncOption) {
+func (gcr *Gcr) Sync(ctx context.Context, opt *SyncOption) {
 	gcrImages := gcr.setDefault(opt).Images()
 	logrus.Infof("sync images count: %d", len(gcrImages))
 	syncImages(ctx, gcrImages, opt)
 }
 
-func (gcr *Gcr) setDefault(opt SyncOption) *Gcr {
+func (gcr *Gcr) setDefault(opt *SyncOption) *Gcr {
 	gcr.Kubeadm = opt.Kubeadm
 	gcr.queryLimitCh = make(chan int, opt.QueryLimit)
 	gcr.NameSpace = opt.NameSpace
-	gcr.HTTPTimeOut = opt.Timeout
+	gcr.TimeOut = opt.Timeout
 	return gcr
 }
