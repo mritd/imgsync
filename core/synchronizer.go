@@ -30,10 +30,11 @@ type Synchronizer interface {
 }
 
 type SyncOption struct {
-	User     string        // Docker Hub User
-	Password string        // Docker Hub User Password
-	Timeout  time.Duration // Sync single image timeout
-	Limit    int           // Images sync process limit
+	User                  string        // Docker Hub User
+	Password              string        // Docker Hub User Password
+	Timeout               time.Duration // Sync single image timeout
+	Limit                 int           // Images sync process limit
+	ForceManifestMIMEType string
 
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
@@ -88,6 +89,16 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 				if !needSync {
 					return
 				}
+				var bs []byte
+				if m != nil {
+					bs, err = jsoniter.MarshalIndent(m, "", "    ")
+				} else {
+					bs, err = jsoniter.MarshalIndent(l, "", "    ")
+				}
+				if err != nil {
+					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+				}
+				logrus.Debug(string(bs))
 
 				rerr := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
 					return sync2DockerHub(&image, opt)
@@ -104,15 +115,7 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 					}
 				}
-				var bs []byte
-				if m != nil {
-					bs, err = jsoniter.MarshalIndent(m, "", "    ")
-				} else {
-					bs, err = jsoniter.MarshalIndent(l, "", "    ")
-				}
-				if err != nil {
-					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
-				}
+
 				if ferr := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); ferr != nil {
 					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), ferr)
 				}
