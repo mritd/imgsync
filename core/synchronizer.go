@@ -189,61 +189,6 @@ func checkSync(image Image) (manifest.Manifest, manifest.List, bool) {
 		logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
 		return nil, nil, false
 	}
-	//val, ok := manifestsMap[image.String()]
-	//if ok {
-	//	switch val.(type) {
-	//	case *manifest.Schema2List:
-	//		sl := val.(*manifest.Schema2List)
-	//		if reflect.DeepEqual(l, sl) {
-	//			logrus.Warnf("image [%s] not changed, skip sync...", image.String())
-	//			return nil, nil, false
-	//		}
-	//		lbs, _ := jsoniter.MarshalIndent(l, "", "    ")
-	//		slbs, _ := jsoniter.MarshalIndent(sl, "", "    ")
-	//		logrus.Infof("######################################################\n%s\n######################################################\n%s\n######################################################", string(lbs), string(slbs))
-	//	case *manifest.OCI1Index:
-	//		ol := val.(*manifest.OCI1Index)
-	//		if reflect.DeepEqual(l, ol) {
-	//			logrus.Warnf("image [%s] not changed, skip sync...", image.String())
-	//			return nil, nil, false
-	//		}
-	//		lbs, _ := jsoniter.MarshalIndent(l, "", "    ")
-	//		olbs, _ := jsoniter.MarshalIndent(ol, "", "    ")
-	//		logrus.Infof("######################################################\n%s\n######################################################\n%s\n######################################################", string(lbs), string(olbs))
-	//	case *manifest.Schema1:
-	//		s1m := val.(*manifest.Schema1)
-	//		if reflect.DeepEqual(m, s1m) {
-	//			logrus.Warnf("image [%s] not changed, skip sync...", image.String())
-	//			return nil, nil, false
-	//		}
-	//		mbs, _ := jsoniter.MarshalIndent(m, "", "    ")
-	//		s1mbs, _ := jsoniter.MarshalIndent(s1m, "", "    ")
-	//		logrus.Infof("######################################################\n%s\n######################################################\n%s\n######################################################", string(mbs), string(s1mbs))
-	//	case *manifest.Schema2:
-	//		s2m := val.(*manifest.Schema2)
-	//		if reflect.DeepEqual(m, s2m) {
-	//			logrus.Warnf("image [%s] not changed, skip sync...", image.String())
-	//			return nil, nil, false
-	//		}
-	//		mbs, _ := jsoniter.MarshalIndent(m, "", "    ")
-	//		s2mbs, _ := jsoniter.MarshalIndent(s2m, "", "    ")
-	//		logrus.Infof("######################################################\n%s\n######################################################\n%s\n######################################################", string(mbs), string(s2mbs))
-	//	case *manifest.OCI1:
-	//		o1m := val.(*manifest.OCI1)
-	//		if reflect.DeepEqual(m, o1m) {
-	//			logrus.Warnf("image [%s] not changed, skip sync...", image.String())
-	//			return nil, nil, false
-	//		}
-	//		mbs, _ := jsoniter.MarshalIndent(m, "", "    ")
-	//		o1mbs, _ := jsoniter.MarshalIndent(o1m, "", "    ")
-	//		logrus.Infof("######################################################\n%s\n######################################################\n%s\n######################################################", string(mbs), string(o1mbs))
-	//	default:
-	//		valbs, _ := jsoniter.MarshalIndent(val, "", "    ")
-	//		logrus.Infof("%v\n%s", val, string(valbs))
-	//	}
-	//} else {
-	//	logrus.Warnf("not found image [%s] cache, syncing...", image.String())
-	//}
 	val, ok := manifestsMap[image.String()]
 	if (ok && m != nil && reflect.DeepEqual(m, val)) || (ok && l != nil && reflect.DeepEqual(l, val)) {
 		logrus.Warnf("image [%s] not changed, skip sync...", image.String())
