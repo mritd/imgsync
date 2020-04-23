@@ -45,9 +45,8 @@ jobs:
       - name: Cache manifests
         uses: actions/cache@v1
         with:
-          path: imgsync/manifests
+          path: manifests
           key: manifests
-          restore-keys: manifests
       - name: Sync k8s.gcr.io images
         env:
           TZ: Asia/Shanghai
@@ -56,3 +55,4 @@ jobs:
         run: |
           chmod +x ./imgsync/imgsync
           ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+          ls manifests
