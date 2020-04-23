@@ -2,9 +2,9 @@ name: Sync Spinnaker
 
 on:
   push:
-    branches: [ wip ]
+    branches: [ master ]
   pull_request:
-    branches: [ wip ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -42,6 +42,11 @@ jobs:
         with:
           name: imgsync
           path: ./imgsync
+      - name: Cache manifests
+        uses: actions/cache@v1
+        with:
+          path: manifests
+          key: spinnaker-marketplace
       - name: Sync spinnaker-marketplace images
         env:
           TZ: Asia/Shanghai
