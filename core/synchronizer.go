@@ -82,7 +82,7 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 			select {
 			case <-ctx.Done():
 			default:
-				logrus.Debugf("process image: %s", image)
+				logrus.Debugf("process image: %s", image.String())
 
 				m, l, needSync := checkSync(image)
 				if !needSync {
@@ -134,7 +134,7 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 		Tag:  image.Tag,
 	}
 
-	logrus.Infof("sync %s => %s", image, destImage.String())
+	logrus.Infof("syncing %s => %s", image, destImage.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer cancel()
@@ -191,7 +191,7 @@ func checkSync(image Image) (manifest.Manifest, manifest.List, bool) {
 	}
 	val, ok := manifestsMap[image.String()]
 	if (ok && m != nil && reflect.DeepEqual(m, val)) || (ok && l != nil && reflect.DeepEqual(l, val)) {
-		logrus.Warnf("image [%s] not changed, skip sync...", image.String())
+		logrus.Infof("image [%s] not changed, skip sync...", image.String())
 		return nil, nil, false
 	}
 	return m, l, true
