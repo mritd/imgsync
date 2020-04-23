@@ -78,7 +78,7 @@ func LoadManifests() error {
 }
 
 func getImageManifest(imageName string) (manifest.Manifest, manifest.List, error) {
-	srcRef, err := docker.Transport.ParseReference("//" + imageName)
+	srcRef, err := docker.ParseReference("//" + imageName)
 	if err != nil {
 		return nil, nil, err
 	}

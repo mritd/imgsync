@@ -142,11 +142,11 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 	}
 	defer func() { _ = policyContext.Destroy() }()
 
-	srcRef, err := docker.Transport.ParseReference("//" + image.String())
+	srcRef, err := docker.ParseReference("//" + image.String())
 	if err != nil {
 		return err
 	}
-	destRef, err := docker.Transport.ParseReference("//" + destImage.String())
+	destRef, err := docker.ParseReference("//" + destImage.String())
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 }
 
 func getImageTags(imageName string, opt TagsOption) ([]string, error) {
-	srcRef, err := docker.Transport.ParseReference("//" + imageName)
+	srcRef, err := docker.ParseReference("//" + imageName)
 	if err != nil {
 		return nil, err
 	}
