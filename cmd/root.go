@@ -75,7 +75,7 @@ func prerun(_ *cobra.Command, _ []string) {
 	}
 }
 
-func boot(name string) {
+func boot(name string, opt *core.SyncOption) {
 	sigs := make(chan os.Signal)
 	ctx, cancel := context.WithCancel(context.Background())
 	var cancelOnce sync.Once
@@ -90,5 +90,5 @@ func boot(name string) {
 		}
 	}()
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	core.NewSynchronizer(name).Sync(ctx, &gcrSyncOption)
+	core.NewSynchronizer(name).Sync(ctx, opt)
 }

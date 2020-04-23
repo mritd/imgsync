@@ -14,7 +14,7 @@ var gcrCmd = &cobra.Command{
 Sync gcr images.`,
 	PreRun: prerun,
 	Run: func(cmd *cobra.Command, args []string) {
-		boot("gcr")
+		boot("gcr", &gcrSyncOption)
 	},
 }
 

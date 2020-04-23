@@ -14,7 +14,7 @@ var flannelCmd = &cobra.Command{
 Sync flannel images.`,
 	PreRun: prerun,
 	Run: func(cmd *cobra.Command, args []string) {
-		boot("flannel")
+		boot("flannel", &flSyncOption)
 	},
 }
 
