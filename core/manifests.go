@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	jsoniter "github.com/json-iterator/go"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/types"
 
@@ -16,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var manifestsMap = make(map[string]manifest.Manifest, 5000)
+var manifestsMap = make(map[string]interface{}, 5000)
 
 func LoadManifests() error {
 	_, err := os.Stat(ManifestDir)
@@ -49,28 +52,35 @@ func LoadManifests() error {
 		if mType == "" {
 			return nil
 		}
-
-		m, jerr := manifest.FromBlob(mbs, mType)
-		if jerr != nil {
-			// ignore err
-			// refs github.com/containers/image/v5@v5.4.3/manifest/manifest.go:253
-			if jerr.Error() != ErrManifestNotImplemented {
-				return jerr
+		switch mType {
+		case manifest.DockerV2ListMediaType:
+			var m2List manifest.Schema2List
+			if err := jsoniter.Unmarshal(mbs, &m2List); err == nil {
+				manifestsMap[cacheKey] = m2List
 			}
-			return nil
+			logrus.Debugf("failed to parse json [%s]: %s", path, err)
+		case imgspecv1.MediaTypeImageIndex:
+			var o1List manifest.OCI1Index
+			if err := jsoniter.Unmarshal(mbs, &o1List); err == nil {
+				manifestsMap[cacheKey] = o1List
+			}
+			logrus.Debugf("failed to parse json [%s]: %s", path, err)
+		default:
+			if m, err := manifest.FromBlob(mbs, mType); err == nil {
+				manifestsMap[cacheKey] = m
+			}
+			logrus.Debugf("failed to parse json [%s]: %s", path, err)
 		}
-
-		manifestsMap[cacheKey] = m
 		return nil
 	})
 	logrus.Infof("load manifests count: %d", len(manifestsMap))
 	return err
 }
 
-func getImageManifest(imageName string) (manifest.Manifest, error) {
+func getImageManifest(imageName string) (manifest.Manifest, manifest.List, error) {
 	srcRef, err := docker.Transport.ParseReference("//" + imageName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
@@ -78,20 +88,40 @@ func getImageManifest(imageName string) (manifest.Manifest, error) {
 	defer imageSrcCancel()
 	src, err := srcRef.NewImageSource(imageSrcCtx, sourceCtx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	getManifestCtx, getManifestCancel := context.WithTimeout(context.Background(), DefaultCtxTimeout)
 	defer getManifestCancel()
 	mbs, _, err := src.GetManifest(getManifestCtx, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	mType := manifest.GuessMIMEType(mbs)
 	if mType == "" {
-		return nil, fmt.Errorf("faile to parse image [%s] manifest type", imageName)
+		return nil, nil, fmt.Errorf("faile to parse image [%s] manifest type", imageName)
 	}
-
-	return manifest.FromBlob(mbs, mType)
+	switch mType {
+	case manifest.DockerV2ListMediaType:
+		var m2List manifest.Schema2List
+		err = jsoniter.Unmarshal(mbs, &m2List)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, &m2List, nil
+	case imgspecv1.MediaTypeImageIndex:
+		var o1List manifest.OCI1Index
+		err = jsoniter.Unmarshal(mbs, &o1List)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, &o1List, nil
+	default:
+		m, err := manifest.FromBlob(mbs, mType)
+		if err != nil {
+			return nil, nil, err
+		}
+		return m, nil, nil
+	}
 }

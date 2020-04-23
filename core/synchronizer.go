@@ -78,18 +78,13 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 				logrus.Debugf("process image: %s", image)
 
 				var notImplemented bool // notImplemented is used to control that unrecognized manifests are always synchronized
-				m, err := getImageManifest(image.String())
+				m, l, err := getImageManifest(image.String())
 				if err != nil {
-					// ignore err
-					// refs github.com/containers/image/v5@v5.4.3/manifest/manifest.go:253
-					if err.Error() != ErrManifestNotImplemented {
-						logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
-						return
-					}
-					notImplemented = true
+					logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
+					return
 				}
 				sm, ok := manifestsMap[image.String()]
-				if !notImplemented && ok && reflect.DeepEqual(m, sm) {
+				if (ok && m != nil && reflect.DeepEqual(m, sm)) || (ok && l != nil && reflect.DeepEqual(l, sm)) {
 					logrus.Warnf("image [%s] not changed, skip sync...", image.String())
 					return
 				}
@@ -171,6 +166,7 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 	_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
 		SourceCtx:             sourceCtx,
 		DestinationCtx:        destinationCtx,
+		ImageListSelection:    copy.CopyAllImages,
 		ForceManifestMIMEType: manifest.DockerV2Schema2MediaType,
 	})
 	return err
