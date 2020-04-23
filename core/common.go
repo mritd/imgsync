@@ -5,7 +5,7 @@ import "time"
 const (
 	DefaultLimit              = 20
 	DefaultSyncTimeout        = 10 * time.Minute
-	DefaultCtxTimeout         = 30 * time.Second
+	DefaultCtxTimeout         = 5 * time.Minute
 	DefaultHTTPTimeout        = 30 * time.Second
 	DefaultGoRequestRetry     = 3
 	DefaultGoRequestRetryTime = 5 * time.Second
@@ -25,8 +25,6 @@ const (
 	// DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
 	// DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 	FlannelImageName = "quay.io/coreos/flannel"
-
-	ErrManifestNotImplemented = "Treating manifest lists as individual manifests is not implemented"
 
 	defaultSyncRetry     = 3
 	defaultSyncRetryTime = 10 * time.Second
