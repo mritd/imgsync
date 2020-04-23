@@ -14,7 +14,6 @@ import (
 
 	"github.com/containers/image/v5/copy"
 	"github.com/containers/image/v5/docker"
-	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/signature"
 	"github.com/containers/image/v5/types"
 
@@ -157,10 +156,9 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 	}}
 
 	_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
-		SourceCtx:             sourceCtx,
-		DestinationCtx:        destinationCtx,
-		ImageListSelection:    copy.CopyAllImages,
-		ForceManifestMIMEType: manifest.DockerV2Schema2MediaType,
+		SourceCtx:          sourceCtx,
+		DestinationCtx:     destinationCtx,
+		ImageListSelection: copy.CopyAllImages,
 	})
 	return err
 }
