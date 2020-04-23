@@ -77,7 +77,6 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 			case limitCh <- 1:
 				logrus.Debugf("process image: %s", image)
 
-				var notImplemented bool // notImplemented is used to control that unrecognized manifests are always synchronized
 				m, l, err := getImageManifest(image.String())
 				if err != nil {
 					logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
@@ -89,10 +88,6 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 					return
 				}
 
-				//ms, _ := jsoniter.MarshalIndent(m, "", "    ")
-				//sms, _ := jsoniter.MarshalIndent(sm, "", "    ")
-				//logrus.Infof("%s\n##########################################\n%s###############################################\n%s", image.String(), string(ms), string(sms))
-
 				err = retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
 					return sync2DockerHub(&image, opt)
 				})
@@ -100,21 +95,19 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 					logrus.Errorf("failed to process image %s, error: %s", image.String(), err)
 				}
 
-				if !notImplemented {
-					storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
-					// ignore other error
-					if _, err := os.Stat(storageDir); err != nil {
-						if err := os.MkdirAll(storageDir, 0755); err != nil {
-							logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
-						}
-					}
-					bs, err := jsoniter.MarshalIndent(m, "", "    ")
-					if err != nil {
+				storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
+				// ignore other error
+				if _, err := os.Stat(storageDir); err != nil {
+					if err := os.MkdirAll(storageDir, 0755); err != nil {
 						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 					}
-					if err := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); err != nil {
-						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
-					}
+				}
+				bs, err := jsoniter.MarshalIndent(m, "", "    ")
+				if err != nil {
+					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+				}
+				if err := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); err != nil {
+					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 				}
 
 			case <-ctx.Done():
