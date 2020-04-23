@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/containers/image/v5/manifest"
+
 	jsoniter "github.com/json-iterator/go"
 
 	"github.com/containers/image/v5/copy"
@@ -76,32 +78,32 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 			case limitCh <- 1:
 				logrus.Debugf("process image: %s", image)
 
-				m, l, err := getImageManifest(image.String())
-				if err != nil {
-					logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
-					return
-				}
-				sm, ok := manifestsMap[image.String()]
-				if (ok && m != nil && reflect.DeepEqual(m, sm)) || (ok && l != nil && reflect.DeepEqual(l, sm)) {
-					logrus.Warnf("image [%s] not changed, skip sync...", image.String())
+				m, l, needSync := checkSync(image)
+				if !needSync {
 					return
 				}
 
-				err = retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
+				err := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
 					return sync2DockerHub(&image, opt)
 				})
 				if err != nil {
 					logrus.Errorf("failed to process image %s, error: %s", image.String(), err)
+					return
 				}
 
 				storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
 				// ignore other error
-				if _, err := os.Stat(storageDir); err != nil {
-					if err := os.MkdirAll(storageDir, 0755); err != nil {
+				if _, err = os.Stat(storageDir); err != nil {
+					if err = os.MkdirAll(storageDir, 0755); err != nil {
 						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 					}
 				}
-				bs, err := jsoniter.MarshalIndent(m, "", "    ")
+				var bs []byte
+				if m != nil {
+					bs, err = jsoniter.MarshalIndent(m, "", "    ")
+				} else {
+					bs, err = jsoniter.MarshalIndent(l, "", "    ")
+				}
 				if err != nil {
 					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 				}
@@ -171,6 +173,19 @@ func getImageTags(imageName string, opt TagsOption) ([]string, error) {
 	sourceCtx := &types.SystemContext{DockerAuthConfig: &types.DockerAuthConfig{}}
 	tagsCtx, tagsCancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer tagsCancel()
-
 	return docker.GetRepositoryTags(tagsCtx, sourceCtx, srcRef)
+}
+
+func checkSync(image Image) (manifest.Manifest, manifest.List, bool) {
+	m, l, err := getImageManifest(image.String())
+	if err != nil {
+		logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
+		return nil, nil, false
+	}
+	sm, ok := manifestsMap[image.String()]
+	if (ok && m != nil && reflect.DeepEqual(m, sm)) || (ok && l != nil && reflect.DeepEqual(l, sm)) {
+		logrus.Warnf("image [%s] not changed, skip sync...", image.String())
+		return nil, nil, false
+	}
+	return m, l, true
 }

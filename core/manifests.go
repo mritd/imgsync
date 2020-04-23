@@ -55,18 +55,18 @@ func LoadManifests() error {
 		switch mType {
 		case manifest.DockerV2ListMediaType:
 			var m2List manifest.Schema2List
-			if err := jsoniter.Unmarshal(mbs, &m2List); err == nil {
+			if jerr := jsoniter.Unmarshal(mbs, &m2List); jerr == nil {
 				manifestsMap[cacheKey] = m2List
 			}
 			logrus.Debugf("failed to parse json [%s]: %s", path, err)
 		case imgspecv1.MediaTypeImageIndex:
 			var o1List manifest.OCI1Index
-			if err := jsoniter.Unmarshal(mbs, &o1List); err == nil {
+			if jerr := jsoniter.Unmarshal(mbs, &o1List); jerr == nil {
 				manifestsMap[cacheKey] = o1List
 			}
 			logrus.Debugf("failed to parse json [%s]: %s", path, err)
 		default:
-			if m, err := manifest.FromBlob(mbs, mType); err == nil {
+			if m, jerr := manifest.FromBlob(mbs, mType); jerr == nil {
 				manifestsMap[cacheKey] = m
 			}
 			logrus.Debugf("failed to parse json [%s]: %s", path, err)
