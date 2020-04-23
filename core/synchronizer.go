@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/panjf2000/ants/v2"
+
 	"github.com/containers/image/v5/manifest"
 
 	jsoniter "github.com/json-iterator/go"
@@ -23,7 +25,7 @@ import (
 )
 
 type Synchronizer interface {
-	Images() Images
+	Images(ctx context.Context) Images
 	Sync(ctx context.Context, opt *SyncOption)
 }
 
@@ -64,18 +66,24 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 	if opt.Limit == 0 {
 		opt.Limit = DefaultLimit
 	}
-	limitCh := make(chan int, opt.Limit)
-	defer close(limitCh)
 
+	pool, err := ants.NewPool(opt.Limit, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
+		logrus.Error(i)
+	}))
+	if err != nil {
+		logrus.Fatalf("failed to create goroutines pool: %s", err)
+	}
 	sort.Sort(images)
-	for _, image := range images {
-		go func(image Image) {
+	for _, tmpImg := range images {
+		image := tmpImg
+		err = pool.Submit(func() {
 			defer func() {
-				<-limitCh
 				processWg.Done()
 			}()
+
 			select {
-			case limitCh <- 1:
+			case <-ctx.Done():
+			default:
 				logrus.Debugf("process image: %s", image)
 
 				m, l, needSync := checkSync(image)
@@ -83,11 +91,11 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 					return
 				}
 
-				err := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
+				rerr := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
 					return sync2DockerHub(&image, opt)
 				})
-				if err != nil {
-					logrus.Errorf("failed to process image %s, error: %s", image.String(), err)
+				if rerr != nil {
+					logrus.Errorf("failed to process image %s, error: %s", image.String(), rerr)
 					return
 				}
 
@@ -107,16 +115,17 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 				if err != nil {
 					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
 				}
-				if err := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); err != nil {
-					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+				if ferr := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); ferr != nil {
+					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), ferr)
 				}
-
-			case <-ctx.Done():
 			}
-		}(image)
+		})
+		if err != nil {
+			logrus.Fatalf("failed to submit task: %s", err)
+		}
 	}
-
 	processWg.Wait()
+	pool.Release()
 }
 
 func sync2DockerHub(image *Image, opt *SyncOption) error {

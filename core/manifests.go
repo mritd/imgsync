@@ -29,6 +29,8 @@ func LoadManifests() error {
 		}
 		return err
 	}
+
+	logrus.Infof("loading manifests path [%s]...", ManifestDir)
 	err = filepath.Walk(ManifestDir, func(path string, info os.FileInfo, ferr error) error {
 		if ferr != nil {
 			return ferr
@@ -36,7 +38,7 @@ func LoadManifests() error {
 		if info.IsDir() {
 			return nil
 		}
-		logrus.Debugf("load manifest: %s", path)
+		logrus.Debugf("loading manifest file: %s", path)
 		ss := strings.Split(strings.Trim(path, ManifestDir), string(filepath.Separator))
 		prefix := strings.Join(ss[:len(ss)-1], "/")
 		tag := strings.Trim(ss[len(ss)-1], ".json")
@@ -57,23 +59,28 @@ func LoadManifests() error {
 			var m2List manifest.Schema2List
 			if jerr := jsoniter.Unmarshal(mbs, &m2List); jerr == nil {
 				manifestsMap[cacheKey] = m2List
+			} else {
+				logrus.Debugf("failed to parse json [%s]: %s", path, err)
 			}
-			logrus.Debugf("failed to parse json [%s]: %s", path, err)
+			return nil
 		case imgspecv1.MediaTypeImageIndex:
 			var o1List manifest.OCI1Index
 			if jerr := jsoniter.Unmarshal(mbs, &o1List); jerr == nil {
 				manifestsMap[cacheKey] = o1List
+			} else {
+				logrus.Debugf("failed to parse json [%s]: %s", path, err)
 			}
-			logrus.Debugf("failed to parse json [%s]: %s", path, err)
+			return nil
 		default:
 			if m, jerr := manifest.FromBlob(mbs, mType); jerr == nil {
 				manifestsMap[cacheKey] = m
+			} else {
+				logrus.Debugf("failed to parse json [%s]: %s", path, err)
 			}
-			logrus.Debugf("failed to parse json [%s]: %s", path, err)
+			return nil
 		}
-		return nil
 	})
-	logrus.Infof("load manifests count: %d", len(manifestsMap))
+	logrus.Infof("loaded manifests count: %d", len(manifestsMap))
 	return err
 }
 
