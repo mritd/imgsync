@@ -2,9 +2,9 @@ name: Sync Kubeadm
 
 on:
   push:
-    branches: [ wip ]
+    branches: [ master ]
   pull_request:
-    branches: [ wip ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -18,6 +18,12 @@ jobs:
       id: go
     - name: Check out code
       uses: actions/checkout@v2
+    - name: Cache manifests
+      uses: actions/cache@v1
+      with:
+        path: imgsync/manifests
+        key: manifests
+        restore-keys: manifests
     - name: Cache go mod
       uses: actions/cache@v1
       with:
