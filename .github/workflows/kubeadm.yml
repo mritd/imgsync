@@ -55,4 +55,3 @@ jobs:
         run: |
           chmod +x ./imgsync/imgsync
           ./imgsync/imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-          ls manifests
