@@ -30,11 +30,12 @@ type Synchronizer interface {
 }
 
 type SyncOption struct {
-	User                  string        // Docker Hub User
-	Password              string        // Docker Hub User Password
-	Timeout               time.Duration // Sync single image timeout
-	Limit                 int           // Images sync process limit
-	ForceManifestMIMEType string
+	User        string        // Docker Hub User
+	Password    string        // Docker Hub User Password
+	Timeout     time.Duration // Sync single image timeout
+	Limit       int           // Images sync process limit
+	BatchSize   int           // Batch size for batch synchronization
+	BatchNumber int           // Sync specified batch
 
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
@@ -59,10 +60,11 @@ func NewSynchronizer(name string) Synchronizer {
 }
 
 func syncImages(ctx context.Context, images Images, opt *SyncOption) {
-	logrus.Infof("starting sync images, image total: %d", len(images))
+	imgs := batchProcess(images, opt)
+	logrus.Infof("starting sync images, image total: %d", len(imgs))
 
 	processWg := new(sync.WaitGroup)
-	processWg.Add(len(images))
+	processWg.Add(len(imgs))
 
 	if opt.Limit == 0 {
 		opt.Limit = DefaultLimit
@@ -75,8 +77,8 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 		logrus.Fatalf("failed to create goroutines pool: %s", err)
 	}
 	sort.Sort(images)
-	for _, tmpImg := range images {
-		image := tmpImg
+	for _, img := range imgs {
+		image := img
 		err = pool.Submit(func() {
 			defer processWg.Done()
 
@@ -198,4 +200,19 @@ func checkSync(image Image) (manifest.Manifest, manifest.List, bool) {
 		return nil, nil, false
 	}
 	return m, l, true
+}
+
+func batchProcess(images Images, opt *SyncOption) Images {
+	if opt.BatchSize > 0 && opt.BatchNumber > 0 && len(images) > opt.BatchSize {
+		n := len(images) / opt.BatchSize
+		var start, end int
+		if opt.BatchNumber >= n {
+			start = opt.BatchSize * (n - 1)
+			return images[start:]
+		}
+		start = opt.BatchSize * (opt.BatchNumber - 1)
+		end = opt.BatchSize * opt.BatchNumber
+		return images[start:end]
+	}
+	return images
 }

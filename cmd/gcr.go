@@ -27,4 +27,6 @@ func init() {
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.Limit, "processlimit", core.DefaultLimit, "sync image limit")
 	gcrCmd.PersistentFlags().DurationVar(&gcrSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
+	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchSize, "batchsize", 0, "batch size")
+	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchNumber, "batchnumber", 0, "batch number")
 }
