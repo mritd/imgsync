@@ -41,7 +41,7 @@ func (fl *Flannel) Images(ctx context.Context) Images {
 func (fl *Flannel) Sync(ctx context.Context, opt *SyncOption) {
 	flImages := fl.setDefault(opt).Images(ctx)
 	logrus.Infof("sync images count: %d", len(flImages))
-	syncImages(ctx, flImages, opt)
+	SyncImages(ctx, flImages, opt)
 }
 
 func (fl *Flannel) setDefault(_ *SyncOption) *Flannel {

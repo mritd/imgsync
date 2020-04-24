@@ -39,9 +39,9 @@ func LoadManifests() error {
 			return nil
 		}
 		logrus.Debugf("loading manifest file: %s", path)
-		ss := strings.Split(strings.Trim(path, ManifestDir), string(filepath.Separator))
+		ss := strings.Split(strings.TrimPrefix(path, ManifestDir), string(filepath.Separator))
 		prefix := strings.Join(ss[:len(ss)-1], "/")
-		tag := strings.Trim(ss[len(ss)-1], ".json")
+		tag := strings.TrimSuffix(ss[len(ss)-1], ".json")
 		cacheKey := strings.TrimPrefix(fmt.Sprintf("%s:%s", prefix, tag), "/")
 		logrus.Debugf("manifest cache key: %s", cacheKey)
 		mbs, rerr := ioutil.ReadFile(path)

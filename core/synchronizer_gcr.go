@@ -127,7 +127,7 @@ func (gcr *Gcr) imageNames() []string {
 func (gcr *Gcr) Sync(ctx context.Context, opt *SyncOption) {
 	gcrImages := gcr.setDefault(opt).Images(ctx)
 	logrus.Infof("sync images count: %d", len(gcrImages))
-	syncImages(ctx, gcrImages, opt)
+	SyncImages(ctx, gcrImages, opt)
 }
 
 func (gcr *Gcr) setDefault(opt *SyncOption) *Gcr {

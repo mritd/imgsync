@@ -59,7 +59,7 @@ func NewSynchronizer(name string) Synchronizer {
 	}
 }
 
-func syncImages(ctx context.Context, images Images, opt *SyncOption) {
+func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 	imgs := batchProcess(images, opt)
 	logrus.Infof("starting sync images, image total: %d", len(imgs))
 
@@ -86,7 +86,6 @@ func syncImages(ctx context.Context, images Images, opt *SyncOption) {
 			case <-ctx.Done():
 			default:
 				logrus.Debugf("process image: %s", image.String())
-
 				m, l, needSync := checkSync(image)
 				if !needSync {
 					return
@@ -139,7 +138,7 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 		Tag:  image.Tag,
 	}
 
-	logrus.Infof("syncing %s => %s", image, destImage.String())
+	logrus.Infof("syncing %s => %s", image.String(), destImage.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer cancel()
