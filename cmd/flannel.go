@@ -24,4 +24,5 @@ func init() {
 	flannelCmd.PersistentFlags().StringVar(&flSyncOption.Password, "password", "", "docker hub user password")
 	flannelCmd.PersistentFlags().DurationVar(&flSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	flannelCmd.PersistentFlags().IntVar(&flSyncOption.Limit, "processlimit", core.DefaultLimit, "sync image limit")
+	flannelCmd.PersistentFlags().BoolVar(&flSyncOption.OnlyDownloadManifests, "donwload-manifests", false, "only download manifests")
 }

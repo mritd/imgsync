@@ -29,4 +29,5 @@ func init() {
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.Kubeadm, "kubeadm", false, "sync kubeadm images(ignore namespace, use k8s.gcr.io)")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchSize, "batchsize", 0, "batch size")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchNumber, "batchnumber", 0, "batch number")
+	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.OnlyDownloadManifests, "donwload-manifests", false, "only download manifests")
 }

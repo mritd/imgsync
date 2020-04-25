@@ -30,16 +30,21 @@ type Synchronizer interface {
 }
 
 type SyncOption struct {
-	User        string        // Docker Hub User
-	Password    string        // Docker Hub User Password
-	Timeout     time.Duration // Sync single image timeout
-	Limit       int           // Images sync process limit
-	BatchSize   int           // Batch size for batch synchronization
-	BatchNumber int           // Sync specified batch
+	User                  string        // Docker Hub User
+	Password              string        // Docker Hub User Password
+	Timeout               time.Duration // Sync single image timeout
+	Limit                 int           // Images sync process limit
+	BatchSize             int           // Batch size for batch synchronization
+	BatchNumber           int           // Sync specified batch
+	OnlyDownloadManifests bool          // Only download Manifests file
+	Report                bool          // Report sync result
+	ReportLevel           int           // Report level
 
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
 	Kubeadm    bool   // Sync kubeadm images (change gcr.io to k8s.gcr.io, and remove namespace)
+
+	reportCh chan Image
 }
 
 type TagsOption struct {
@@ -69,6 +74,9 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 	if opt.Limit == 0 {
 		opt.Limit = DefaultLimit
 	}
+	if opt.Report {
+		opt.reportCh = make(chan Image, opt.Limit)
+	}
 
 	pool, err := ants.NewPool(opt.Limit, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
 		logrus.Error(i)
@@ -86,7 +94,7 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 			case <-ctx.Done():
 			default:
 				logrus.Debugf("process image: %s", image.String())
-				m, l, needSync := checkSync(image)
+				m, l, needSync := checkSync(&image)
 				if !needSync {
 					return
 				}
@@ -131,6 +139,9 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 }
 
 func sync2DockerHub(image *Image, opt *SyncOption) error {
+	if opt.OnlyDownloadManifests {
+		return nil
+	}
 	destImage := Image{
 		Repo: DefaultDockerRepo,
 		User: opt.User,
@@ -187,7 +198,7 @@ func getImageTags(imageName string, opt TagsOption) ([]string, error) {
 	return docker.GetRepositoryTags(tagsCtx, sourceCtx, srcRef)
 }
 
-func checkSync(image Image) (manifest.Manifest, manifest.List, bool) {
+func checkSync(image *Image) (manifest.Manifest, manifest.List, bool) {
 	m, l, err := getImageManifest(image.String())
 	if err != nil {
 		logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
