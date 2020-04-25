@@ -2,17 +2,17 @@
 
 A docker image sync tool.
 
-|Registry|Address|Status|
-|--------|-------|------|
-|Flannel|[quay.io/coreos/flannel](https://quay.io/coreos/flannel)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|kubeadm|[k8s.gcr.io](https://k8s.gcr.io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Helm|[gcr.io/kubernetes-helm](https://gcr.io/kubernetes-helm)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Istio|[gcr.io/istio-release](https://gcr.io/istio-release)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Distroless|[gcr.io/distroless](https://gcr.io/distroless)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Registry|Address|Docker Hub|Status|
+|--------|-------|----------|------|
+|Flannel|[quay.io/coreos/flannel](https://quay.io/coreos/flannel)|`gcrxio/quay.io_coreos_flannel`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|kubeadm|[k8s.gcr.io](https://k8s.gcr.io)|`gcrxio/k8s.gcr.io_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Helm|[gcr.io/kubernetes-helm](https://gcr.io/kubernetes-helm)|`gcrxio/gcr.io_kubernetes-helm_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Istio|[gcr.io/istio-release](https://gcr.io/istio-release)|`gcrxio/gcr.io_istio-release_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|`gcrxio/gcr.io_linkerd-io_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|`gcrxio/gcr.io_spinnaker-marketplace_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
 
-# 特性
+## 特性
 
 - **不依赖 Docker 运行**
 - **基于 Manifests 同步**
@@ -78,9 +78,14 @@ Use "imgsync [command] --help" for more information about a command..
 
 `flannel` 子命令用于同步 **quay.io** 的 flannel 镜像
 
+### 镜像名称
+
+工具默认会转换原镜像名称，转换规则为将原镜像名称内的 `/` 全部替换为 `_`，例如(假设 Docker Hub 用户名为 `gcrxio`):
+
+`gcr.io/istio-release/pilot:latest` ==> `gcrxio/gcr.io_istio-release_pilot:latest`
 
 ## 其他说明
 
-**、工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库打算。同步 Docker Hub
-时默认会同步到 `--user` 指定的用户下；镜像名称会被转换，原镜像地址内 `/` 全部转换为 `_`。
+**工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库打算。同步 Docker Hub
+时默认会同步到 `--user` 指定的用户下；本工具默认已经将支持的仓库同步到 Docker Hub [gcrxio](https://hub.docker.com/u/gcrxio) 用户下；
 其他更细节使用请自行通过 `--help` 查看以及参考本项目 [Github Action](https://github.com/mritd/imgsync/tree/master/.github/workflows) 配置文件。**
