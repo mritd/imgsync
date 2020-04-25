@@ -4,13 +4,24 @@ A docker image sync tool.
 
 |Registry|Address|Status|
 |--------|-------|------|
-|Flannel|[quay.io/coreos/flannel](quay.io/coreos/flannel)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|kubeadm|[k8s.gcr.io](k8s.gcr.io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Helm|[gcr.io/kubernetes-helm](gcr.io/kubernetes-helm)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Istio|[gcr.io/istio-release](gcr.io/istio-release)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Linkerd|[gcr.io/linkerd-io](gcr.io/linkerd-io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Spinnaker|[gcr.io/spinnaker-marketplace](gcr.io/spinnaker-marketplace)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Distroless|[gcr.io/distroless](gcr.io/distroless)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Flannel|[quay.io/coreos/flannel](https://quay.io/coreos/flannel)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|kubeadm|[k8s.gcr.io](https://k8s.gcr.io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Helm|[gcr.io/kubernetes-helm](https://gcr.io/kubernetes-helm)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Istio|[gcr.io/istio-release](https://gcr.io/istio-release)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Distroless|[gcr.io/distroless](https://gcr.io/distroless)|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
+
+# 特性
+
+- **不依赖 Docker 运行**
+- **基于 Manifests 同步**
+- **支持 [Fat Manifests](https://medium.com/@arunrajeevan/handling-multi-platform-deployment-using-manifest-file-in-docker-317736a2a039) 镜像同步**
+- **Manifests 文件本地 Cache，按需同步**
+- **同步期间不占用本地磁盘空间(直接通过标准库转发镜像)**
+- **可控的并发同步(优雅关闭/可调节并发数量)**
+- **按批次同步，支持同步指定区间段镜像**
+- **支持多仓库同步(后续仓库增加请提交 issue)**
 
 ## 安装
 
@@ -35,7 +46,6 @@ chmod +x imgsync_linux_amd64
 ## 使用
 
 ```bash
-
 Docker image sync tool.
 
 Usage:
@@ -46,26 +56,31 @@ Available Commands:
   flannel     Sync flannel images
   gcr         Sync gcr images
   help        Help about any command
+  sync        Sync single image
 
 Flags:
       --debug     debug mode
   -h, --help      help for imgsync
   -v, --version   version for imgsync
 
-Use "imgsync [command] --help" for more information about a command.
+Use "imgsync [command] --help" for more information about a command..
 ```
 
-### flannel
+### sync
 
-`flannel` 子命令用于同步 **quay.io** 的 flannel 镜像
+`sync` 子命令用于同步单个镜像，一般用于测试目的进行同步并查看相关日志
 
 ### gcr
 
 `gcr` 子命令用户同步 **gcr.io** 相关镜像，如果使用 `--kubeadm` 选项则同步 **k8s.gcr.io** 镜像
 
+### flannel
+
+`flannel` 子命令用于同步 **quay.io** 的 flannel 镜像
+
 
 ## 其他说明
 
-**本工具并不依赖 Docker 运行，镜像拉取推送通过标准库完成；工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库
-打算。同步 Docker Hub 时默认会同步到 `--user` 指定的用户下，镜像名称会被转换，原镜像地址内 `/` 全部转换为 `_`。
+**、工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库打算。同步 Docker Hub
+时默认会同步到 `--user` 指定的用户下；镜像名称会被转换，原镜像地址内 `/` 全部转换为 `_`。
 其他更细节使用请自行通过 `--help` 查看以及参考本项目 [Github Action](https://github.com/mritd/imgsync/tree/master/.github/workflows) 配置文件。**
