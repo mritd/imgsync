@@ -1,0 +1,35 @@
+language: go
+
+go:
+  - 1.14.x
+
+os: linux
+
+cache:
+  directories:
+    - $HOME/.cache/go-build
+    - $GOPATH/pkg/mod
+    - $HOME/manifests
+
+stages:
+  - build
+  - sync distroless
+  - sync flannel
+  - sync google-samples
+  - sync kubernetes-helm
+  - sync istio-release
+  - sync k8s.gcr.io
+  - sync linkerd-io
+  - sync spinnaker-marketplace
+
+jobs:
+  include:
+    - stage: build
+      script:
+        - make install
+    - stage: sync distroless
+      script:
+        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: sync flannel
+      script:
+        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
