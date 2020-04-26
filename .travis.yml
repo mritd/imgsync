@@ -29,25 +29,26 @@ jobs:
         - make install
     - stage: Sync Kubeadm
       script:
+        - pwd
         - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Flannel
-      script:
-        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Helm
-      script:
-        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Istio
-      script:
-        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Distroless
-      script:
-        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Samples
-      script:
-        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Linkerd
-      script:
-        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: Sync Spinnaker
-      script:
-        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Flannel
+#      script:
+#        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Helm
+#      script:
+#        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Istio
+#      script:
+#        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Distroless
+#      script:
+#        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Samples
+#      script:
+#        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Linkerd
+#      script:
+#        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+#    - stage: Sync Spinnaker
+#      script:
+#        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
