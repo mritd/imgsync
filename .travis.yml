@@ -32,9 +32,7 @@ jobs:
 #        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
     - stage: Sync Flannel
       script:
-        - pwd
         - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
-        - ls ${HOME}/manifests
 #    - stage: Sync Helm
 #      script:
 #        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
