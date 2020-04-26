@@ -7,7 +7,6 @@ go: 1.14.x
 cache:
   directories:
     - ${HOME}/.cache/go-build
-    - ${HOME}/gcr
     - ${GOPATH}/pkg/mod
     - ${GOPATH}/bin
 
@@ -17,7 +16,6 @@ env:
 
 stages:
   - Build imgsync
-  - Fetch Manifests
   - Sync Kubeadm
   - Sync Flannel
   - Sync Helm
@@ -27,15 +25,14 @@ stages:
   - Sync Linkerd
   - Sync Spinnaker
 
+before_script:
+  - bash .travis-before.sh
+
 jobs:
   include:
     - stage: Build imgsync
       script:
         - make install
-    - stage: Fetch Manifests
-      script:
-        - rm -rf ${GCR_REPO}
-        - git clone https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git ${GCR_REPO}
     - stage: Sync Kubeadm
       script:
         - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
@@ -61,5 +58,6 @@ jobs:
       script:
         - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
 
+
 after_success:
-  - bash .travis.sh
+  - bash .travis-after.sh
