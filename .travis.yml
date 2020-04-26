@@ -8,7 +8,7 @@ cache:
   directories:
     - $HOME/.cache/go-build
     - $GOPATH/pkg/mod
-    - $GOPATH/bin/imgsync
+    - $GOPATH/bin
     - $HOME/manifests
 
 stages:
