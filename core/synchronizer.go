@@ -84,7 +84,7 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 	if err != nil {
 		logrus.Fatalf("failed to create goroutines pool: %s", err)
 	}
-	sort.Sort(images)
+	sort.Sort(imgs)
 	for _, img := range imgs {
 		image := img
 		err = pool.Submit(func() {
@@ -206,7 +206,7 @@ func checkSync(image *Image) (manifest.Manifest, manifest.List, bool) {
 	}
 	val, ok := manifestsMap[image.String()]
 	if (ok && m != nil && reflect.DeepEqual(m, val)) || (ok && l != nil && reflect.DeepEqual(l, val)) {
-		logrus.Infof("image [%s] not changed, skip sync...", image.String())
+		logrus.Debugf("image [%s] not changed, skip sync...", image.String())
 		return nil, nil, false
 	}
 	return m, l, true
