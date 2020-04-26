@@ -13,6 +13,7 @@ cache:
 
 stages:
   - Build imgsync
+  - Fetch Manifests
   - Sync Kubeadm
   - Sync Flannel
   - Sync Helm
@@ -27,6 +28,10 @@ jobs:
     - stage: Build imgsync
       script:
         - make install
+    - stage: Fetch Manifests
+      script:
+        - rm -rf ${HOME}/manifests
+        - git clone https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git ${HOME}/manifests
     - stage: Sync Kubeadm
       script:
         - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/manifests
@@ -51,3 +56,12 @@ jobs:
     - stage: Sync Spinnaker
       script:
         - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/manifests
+
+after_success: |
+  export TZ=UTC-8
+  cd ${HOME}/manifests
+  if [ ! git diff-index --quiet HEAD -- ]; then
+    git add .
+    git commit -m "Travis CI Auto Update(`date +'%Y-%m-%d %H:%M:%S'`)"
+    git push https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git
+  fi
