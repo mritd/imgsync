@@ -6,10 +6,10 @@ go: 1.14.x
 
 cache:
   directories:
-    - $HOME/.cache/go-build
-    - $GOPATH/pkg/mod
-    - $GOPATH/bin
-    - $HOME/manifests
+    - ${HOME}/.cache/go-build
+    - ${HOME}/manifests
+    - ${GOPATH}/pkg/mod
+    - ${GOPATH}/bin
 
 stages:
   - Build imgsync
@@ -30,7 +30,8 @@ jobs:
     - stage: Sync Kubeadm
       script:
         - pwd
-        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
+        - ls ${HOME}/manifests
 #    - stage: Sync Flannel
 #      script:
 #        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}

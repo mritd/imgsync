@@ -60,4 +60,5 @@ func init() {
 	syncCmd.PersistentFlags().StringVar(&syncOption.NameSpace, "namespace", "google-containers", "google container registry namespace")
 	syncCmd.PersistentFlags().DurationVar(&syncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	syncCmd.PersistentFlags().BoolVar(&syncOption.OnlyDownloadManifests, "donwload-manifests", false, "only download manifests")
+	syncCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }

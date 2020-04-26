@@ -30,4 +30,5 @@ func init() {
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchSize, "batchsize", 0, "batch size")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.BatchNumber, "batchnumber", 0, "batch number")
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.OnlyDownloadManifests, "donwload-manifests", false, "only download manifests")
+	gcrCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }
