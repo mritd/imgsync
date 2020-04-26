@@ -7,7 +7,7 @@ go: 1.14.x
 cache:
   directories:
     - ${HOME}/.cache/go-build
-    - ${HOME}/manifests
+    - ${HOME}/gcr
     - ${GOPATH}/pkg/mod
     - ${GOPATH}/bin
 
