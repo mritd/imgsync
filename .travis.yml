@@ -11,6 +11,10 @@ cache:
     - ${GOPATH}/pkg/mod
     - ${GOPATH}/bin
 
+env:
+  global:
+    - GCR_REPO: ${HOME}/gcr
+
 stages:
   - Build imgsync
   - Fetch Manifests
@@ -30,32 +34,32 @@ jobs:
         - make install
     - stage: Fetch Manifests
       script:
-        - rm -rf ${HOME}/manifests
-        - git clone https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git ${HOME}/gcr
+        - rm -rf ${GCR_REPO}
+        - git clone https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git ${GCR_REPO}
     - stage: Sync Kubeadm
       script:
-        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Flannel
       script:
-        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Helm
       script:
-        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Istio
       script:
-        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Distroless
       script:
-        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Samples
       script:
-        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Linkerd
       script:
-        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
     - stage: Sync Spinnaker
       script:
-        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/gcr/manifests
+        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${GCR_REPO}/manifests
 
 after_success:
   - bash .travis.sh

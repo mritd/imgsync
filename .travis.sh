@@ -3,7 +3,7 @@
 set -e
 
 export TZ=UTC-8
-cd ${HOME}/manifests
+cd ${GCR_REPO}
 if [ -n "$(git status --porcelain)" ]; then
   git add .
   git commit -m "Travis CI Auto Update(`date +'%Y-%m-%d %H:%M:%S'`)"
