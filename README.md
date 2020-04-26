@@ -11,6 +11,7 @@ A docker image sync tool.
 |Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|`gcrxio/gcr.io_linkerd-io_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
 |Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|`gcrxio/gcr.io_spinnaker-marketplace_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
 |Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Google-samples|[gcr.io/google-samples](https://gcr.io/google-samples)|`gcrxio/gcr.io_google-samples_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Google-samples/badge.svg)](https://github.com/mritd/imgsync/actions)|
 
 ## 特性
 
@@ -78,11 +79,26 @@ Use "imgsync [command] --help" for more information about a command..
 
 `flannel` 子命令用于同步 **quay.io** 的 flannel 镜像
 
-### 镜像名称
+## 推荐配置
+
+由于工具会开启并发同步，且不经过 Docker，不进行本地缓存，所以本工具推荐的最低运行配置如下:
+
+- 4 核心 8G 内存 vps
+- 至少 100/M 对等的带宽接口
+- Ubuntu 18.04+ 系统环境
+- 磁盘至少保留 2G 可用空间(manifests 本地缓存需要用到一定空间)
+
+**本工具默认 20 并发进行同步处理，且每次同步针对每个镜像 tag 至少发出一次 manifest 请求；
+这意味着当前(在本文档编写时)每次全部仓库同步至少发出 100083 个 manifests 请求以及其他试图
+获取镜像名称列表、tag 列表的请求，在高并发下这需要服务器有足够的 CPU 和带宽能力；占用方面目前
+还可以接受，主要内存消耗在启动时加载 manifests 配置文件并反序列化到内存 map，这期间大约需要
+花费最高 10s 的时间(434M json 文件)。**
+
+## 镜像名称
 
 工具默认会转换原镜像名称，转换规则为将原镜像名称内的 `/` 全部替换为 `_`，例如(假设 Docker Hub 用户名为 `gcrxio`):
 
-`gcr.io/istio-release/pilot:latest` ==> `gcrxio/gcr.io_istio-release_pilot:latest`
+**`gcr.io/istio-release/pilot:latest` ==> `gcrxio/gcr.io_istio-release_pilot:latest`**
 
 ## 其他说明
 
