@@ -9,6 +9,7 @@ cache:
   directories:
     - $HOME/.cache/go-build
     - $GOPATH/pkg/mod
+    - $GOPATH/bin/imgsync
     - $HOME/manifests
 
 stages:
@@ -26,7 +27,10 @@ jobs:
   include:
     - stage: build
       script:
-        - make install
+        - make bin
+        - pwd
+        - which imgsync
+        - imgsync -h
     - stage: sync distroless
       script:
         - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}

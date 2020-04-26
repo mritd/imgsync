@@ -2,9 +2,9 @@ name: Sync Flannel
 
 on:
   push:
-    branches: [ master ]
+    branches: [ disabled ]
   pull_request:
-    branches: [ master ]
+    branches: [ disabled ]
 
 jobs:
   build:
