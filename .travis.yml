@@ -12,27 +12,42 @@ cache:
     - $HOME/manifests
 
 stages:
-  - build
-  - sync distroless
-  - sync flannel
-  - sync google-samples
-  - sync kubernetes-helm
-  - sync istio-release
-  - sync k8s.gcr.io
-  - sync linkerd-io
-  - sync spinnaker-marketplace
+  - Build imgsync
+  - Sync Kubeadm
+  - Sync Flannel
+  - Sync Helm
+  - Sync Istio
+  - Sync Distroless
+  - Sync Samples
+  - Sync Linkerd
+  - Sync Spinnaker
 
 jobs:
   include:
-    - stage: build
+    - stage: Build imgsync
       script:
         - make install
-        - pwd
-        - which imgsync
-        - imgsync -h
-    - stage: sync distroless
+    - stage: Sync Kubeadm
       script:
-        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
-    - stage: sync flannel
+        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Flannel
       script:
         - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Helm
+      script:
+        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Istio
+      script:
+        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Distroless
+      script:
+        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Samples
+      script:
+        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Linkerd
+      script:
+        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+    - stage: Sync Spinnaker
+      script:
+        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
