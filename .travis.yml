@@ -27,14 +27,14 @@ jobs:
     - stage: Build imgsync
       script:
         - make install
-    - stage: Sync Kubeadm
+#    - stage: Sync Kubeadm
+#      script:
+#        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
+    - stage: Sync Flannel
       script:
         - pwd
-        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
+        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --manifests ${HOME}/manifests
         - ls ${HOME}/manifests
-#    - stage: Sync Flannel
-#      script:
-#        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
 #    - stage: Sync Helm
 #      script:
 #        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD}
