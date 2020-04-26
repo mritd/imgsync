@@ -58,11 +58,4 @@ jobs:
         - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --processlimit 40 --manifests ${HOME}/manifests
 
 after_success:
-  - >
-    export TZ=UTC-8
-    cd ${HOME}/manifests
-    if [ ! git diff-index --quiet HEAD -- ]; then
-      git add .
-      git commit -m "Travis CI Auto Update(`date +'%Y-%m-%d %H:%M:%S'`)"
-      git push https://mritd:${GITHUB_TOKEN}@github.com/mritd/gcr.git
-    fi
+  - bash .travis.sh
