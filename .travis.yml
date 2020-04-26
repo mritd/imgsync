@@ -1,9 +1,8 @@
 language: go
 
-go:
-  - 1.14.x
-
 os: linux
+dist: bionic
+go: 1.14.x
 
 cache:
   directories:
@@ -27,7 +26,7 @@ jobs:
   include:
     - stage: build
       script:
-        - make bin
+        - make install
         - pwd
         - which imgsync
         - imgsync -h
