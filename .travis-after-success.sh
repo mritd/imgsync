@@ -3,7 +3,7 @@
 set -e
 
 if [ -f "imgsync_report" ]; then
-  openssl aes-256-cbc -K encrypted_39d2a83529c0_key -iv encrypted_39d2a83529c0_iv -in msgsend.yaml.enc -out msgsend.yaml -d
+  openssl aes-256-cbc -K $encrypted_39d2a83529c0_key -iv $encrypted_39d2a83529c0_iv -in msgsend.yaml.enc -out msgsend.yaml -d
   echo "${TRAVIS_JOB_NAME} success!" >> report
   cat imgsync_report >> report
   msgsend --config msgsend.yaml txt --file report
