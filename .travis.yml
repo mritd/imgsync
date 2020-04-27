@@ -36,28 +36,28 @@ jobs:
         - go get -u github.com/gozap/msgsend
     - stage: Sync Kubeadm
       script:
-        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Flannel
       script:
-        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync flannel --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Helm
       script:
-        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace kubernetes-helm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Istio
       script:
-        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace istio-release --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Distroless
       script:
-        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace distroless --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Samples
       script:
-        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace google-samples --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Linkerd
       script:
-        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace linkerd-io --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
     - stage: Sync Spinnaker
       script:
-        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
+        - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
 
 after_failure:
   - bash .travis-after-failure.sh
