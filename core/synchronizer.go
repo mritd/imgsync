@@ -42,6 +42,7 @@ type SyncOption struct {
 	OnlyDownloadManifests bool          // Only download Manifests file
 	Report                bool          // Report sync result
 	ReportLevel           int           // Report level
+	ReportFile            string        // Report file
 
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
@@ -259,7 +260,7 @@ func report(images Images, opt *SyncOption) {
 			failedCount++
 		}
 	}
-	report = fmt.Sprintf(reportHeaderTpl, Banner, len(images), successCount, failedCount, cacheHitCount)
+	report = fmt.Sprintf(reportHeaderTpl, Banner, len(images), failedCount, successCount, cacheHitCount)
 
 	if opt.ReportLevel > 1 {
 		var buf bytes.Buffer
@@ -281,4 +282,10 @@ func report(images Images, opt *SyncOption) {
 		report += buf.String()
 	}
 	fmt.Println(report)
+	if opt.ReportFile != "" {
+		err := ioutil.WriteFile(opt.ReportFile, []byte(report), 0644)
+		if err != nil {
+			logrus.Errorf("failed to create report file: %s", err)
+		}
+	}
 }

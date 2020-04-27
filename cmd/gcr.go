@@ -32,5 +32,6 @@ func init() {
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.OnlyDownloadManifests, "download-manifests", false, "only download manifests")
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.Report, "report", false, "report sync detail")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.ReportLevel, "report-level", 1, "report sync detail level")
+	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.ReportFile, "report-file", "imgsync_report", "report sync detail file")
 	gcrCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }

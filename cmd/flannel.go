@@ -27,5 +27,6 @@ func init() {
 	flannelCmd.PersistentFlags().BoolVar(&flSyncOption.OnlyDownloadManifests, "download-manifests", false, "only download manifests")
 	flannelCmd.PersistentFlags().BoolVar(&gcrSyncOption.Report, "report", false, "report sync detail")
 	flannelCmd.PersistentFlags().IntVar(&gcrSyncOption.ReportLevel, "report-level", 1, "report sync detail level")
+	flannelCmd.PersistentFlags().StringVar(&gcrSyncOption.ReportFile, "report-file", "imgsync_report", "report sync detail file")
 	flannelCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }
