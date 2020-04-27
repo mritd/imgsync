@@ -199,7 +199,18 @@ func getImageTags(imageName string, opt TagsOption) ([]string, error) {
 }
 
 func checkSync(image *Image) (manifest.Manifest, manifest.List, bool) {
-	m, l, err := getImageManifest(image.String())
+	var m manifest.Manifest
+	var l manifest.List
+	var merr error
+
+	err := retry(DefaultGoRequestRetry, DefaultGoRequestRetryTime, func() error {
+		m, l, merr = getImageManifest(image.String())
+		if merr != nil {
+			return merr
+		}
+		return nil
+	})
+
 	if err != nil {
 		logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
 		return nil, nil, false
