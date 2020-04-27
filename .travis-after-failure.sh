@@ -2,5 +2,5 @@
 
 set -e
 
-openssl aes-256-cbc -K $encrypted_0a6446eb3ae3_key -iv $encrypted_0a6446eb3ae3_iv -in msgsend.yaml.enc -out msgsend.yaml -d
+openssl aes-256-cbc -K encrypted_39d2a83529c0_key -iv encrypted_39d2a83529c0_iv -in msgsend.yaml.enc -out msgsend.yaml -d
 msgsend --config msgsend.yaml txt "❌ ${TRAVIS_JOB_NAME} failed!"

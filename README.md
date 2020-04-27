@@ -1,5 +1,7 @@
 ![imgsync](.logo.png)
 
+## imgsync
+
 A docker image sync tool.
 
 |Registry|Address|Docker Hub|Status|
@@ -23,6 +25,7 @@ A docker image sync tool.
 - **可控的并发同步(优雅关闭/可调节并发数量)**
 - **按批次同步，支持同步指定区间段镜像**
 - **支持多仓库同步(后续仓库增加请提交 issue)**
+- **支持生成同步报告，同步报告推送 [Telegram](https://t.me/imgsync)**
 
 ## 安装
 
