@@ -36,7 +36,8 @@ func (gcr *Gcr) Images(ctx context.Context) Images {
 	imgCh := make(chan Image, gcr.queryLimit)
 	err = pool.Submit(func() {
 		for image := range imgCh {
-			images = append(images, image)
+			img := image
+			images = append(images, &img)
 		}
 	})
 	if err != nil {
@@ -127,7 +128,8 @@ func (gcr *Gcr) imageNames() []string {
 func (gcr *Gcr) Sync(ctx context.Context, opt *SyncOption) {
 	gcrImages := gcr.setDefault(opt).Images(ctx)
 	logrus.Infof("sync images count: %d", len(gcrImages))
-	SyncImages(ctx, gcrImages, opt)
+	imgs := SyncImages(ctx, gcrImages, opt)
+	report(imgs, opt)
 }
 
 func (gcr *Gcr) setDefault(opt *SyncOption) *Gcr {

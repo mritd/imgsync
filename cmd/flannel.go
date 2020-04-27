@@ -25,5 +25,7 @@ func init() {
 	flannelCmd.PersistentFlags().DurationVar(&flSyncOption.Timeout, "timeout", core.DefaultSyncTimeout, "sync single image timeout")
 	flannelCmd.PersistentFlags().IntVar(&flSyncOption.Limit, "process-limit", core.DefaultLimit, "sync image limit")
 	flannelCmd.PersistentFlags().BoolVar(&flSyncOption.OnlyDownloadManifests, "download-manifests", false, "only download manifests")
+	flannelCmd.PersistentFlags().BoolVar(&gcrSyncOption.Report, "report", false, "report sync detail")
+	flannelCmd.PersistentFlags().IntVar(&gcrSyncOption.ReportLevel, "report-level", 1, "report sync detail level")
 	flannelCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }

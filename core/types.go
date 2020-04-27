@@ -7,6 +7,10 @@ type Image struct {
 	User string
 	Name string
 	Tag  string
+
+	Success  bool
+	CacheHit bool
+	Err      error
 }
 
 func (img *Image) String() string {
@@ -23,8 +27,15 @@ func (img *Image) MergeName() string {
 	return fmt.Sprintf("%s_%s", img.Repo, img.Name)
 }
 
-type Images []Image
+type Images []*Image
 
 func (imgs Images) Len() int           { return len(imgs) }
 func (imgs Images) Less(i, j int) bool { return imgs[i].String() < imgs[j].String() }
 func (imgs Images) Swap(i, j int)      { imgs[i], imgs[j] = imgs[j], imgs[i] }
+
+type SyncReport struct {
+	Image    string
+	Success  bool
+	CacheHit bool
+	Err      error
+}

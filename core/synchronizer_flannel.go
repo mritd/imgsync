@@ -26,7 +26,7 @@ func (fl *Flannel) Images(ctx context.Context) Images {
 
 		ss := strings.Split(FlannelImageName, "/")
 		for _, tag := range tags {
-			images = append(images, Image{
+			images = append(images, &Image{
 				Repo: ss[0],
 				User: ss[1],
 				Name: ss[2],
@@ -41,7 +41,8 @@ func (fl *Flannel) Images(ctx context.Context) Images {
 func (fl *Flannel) Sync(ctx context.Context, opt *SyncOption) {
 	flImages := fl.setDefault(opt).Images(ctx)
 	logrus.Infof("sync images count: %d", len(flImages))
-	SyncImages(ctx, flImages, opt)
+	imgs := SyncImages(ctx, flImages, opt)
+	report(imgs, opt)
 }
 
 func (fl *Flannel) setDefault(_ *SyncOption) *Flannel {

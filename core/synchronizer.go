@@ -1,13 +1,16 @@
 package core
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/panjf2000/ants/v2"
@@ -43,8 +46,6 @@ type SyncOption struct {
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
 	Kubeadm    bool   // Sync kubeadm images (change gcr.io to k8s.gcr.io, and remove namespace)
-
-	reportCh chan Image
 }
 
 type TagsOption struct {
@@ -64,7 +65,7 @@ func NewSynchronizer(name string) Synchronizer {
 	}
 }
 
-func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
+func SyncImages(ctx context.Context, images Images, opt *SyncOption) Images {
 	imgs := batchProcess(images, opt)
 	logrus.Infof("starting sync images, image total: %d", len(imgs))
 
@@ -74,9 +75,6 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 	if opt.Limit == 0 {
 		opt.Limit = DefaultLimit
 	}
-	if opt.Report {
-		opt.reportCh = make(chan Image, opt.Limit)
-	}
 
 	pool, err := ants.NewPool(opt.Limit, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
 		logrus.Error(i)
@@ -85,16 +83,16 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 		logrus.Fatalf("failed to create goroutines pool: %s", err)
 	}
 	sort.Sort(imgs)
-	for _, img := range imgs {
-		image := img
+	for i := 0; i < len(imgs); i++ {
+		k := i
 		err = pool.Submit(func() {
 			defer processWg.Done()
 
 			select {
 			case <-ctx.Done():
 			default:
-				logrus.Debugf("process image: %s", image.String())
-				m, l, needSync := checkSync(&image)
+				logrus.Debugf("process image: %s", imgs[k].String())
+				m, l, needSync := checkSync(imgs[k])
 				if !needSync {
 					return
 				}
@@ -105,28 +103,30 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 					bs, err = jsoniter.MarshalIndent(l, "", "    ")
 				}
 				if err != nil {
-					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+					logrus.Errorf("failed to storage image [%s] manifests: %s", imgs[k].String(), err)
 				}
 				logrus.Debug(string(bs))
 
 				rerr := retry(defaultSyncRetry, defaultSyncRetryTime, func() error {
-					return sync2DockerHub(&image, opt)
+					return sync2DockerHub(imgs[k], opt)
 				})
 				if rerr != nil {
-					logrus.Errorf("failed to process image %s, error: %s", image.String(), rerr)
+					imgs[k].Err = rerr
+					logrus.Errorf("failed to process image %s, error: %s", imgs[k].String(), rerr)
 					return
 				}
+				imgs[k].Success = true
 
-				storageDir := filepath.Join(ManifestDir, image.Repo, image.User, image.Name)
+				storageDir := filepath.Join(ManifestDir, imgs[k].Repo, imgs[k].User, imgs[k].Name)
 				// ignore other error
 				if _, err = os.Stat(storageDir); err != nil {
 					if err = os.MkdirAll(storageDir, 0755); err != nil {
-						logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), err)
+						logrus.Errorf("failed to storage image [%s] manifests: %s", imgs[k].String(), err)
 					}
 				}
 
-				if ferr := ioutil.WriteFile(filepath.Join(storageDir, image.Tag+".json"), bs, 0644); ferr != nil {
-					logrus.Errorf("failed to storage image [%s] manifests: %s", image.String(), ferr)
+				if ferr := ioutil.WriteFile(filepath.Join(storageDir, imgs[k].Tag+".json"), bs, 0644); ferr != nil {
+					logrus.Errorf("failed to storage image [%s] manifests: %s", imgs[k].String(), ferr)
 				}
 			}
 		})
@@ -136,6 +136,7 @@ func SyncImages(ctx context.Context, images Images, opt *SyncOption) {
 	}
 	processWg.Wait()
 	pool.Release()
+	return imgs
 }
 
 func sync2DockerHub(image *Image, opt *SyncOption) error {
@@ -212,11 +213,14 @@ func checkSync(image *Image) (manifest.Manifest, manifest.List, bool) {
 	})
 
 	if err != nil {
+		image.Err = err
 		logrus.Errorf("failed to get image [%s] manifest, error: %s", image.String(), err)
 		return nil, nil, false
 	}
 	val, ok := manifestsMap[image.String()]
 	if (ok && m != nil && reflect.DeepEqual(m, val)) || (ok && l != nil && reflect.DeepEqual(l, val)) {
+		image.Success = true
+		image.CacheHit = true
 		logrus.Debugf("image [%s] not changed, skip sync...", image.String())
 		return nil, nil, false
 	}
@@ -236,4 +240,45 @@ func batchProcess(images Images, opt *SyncOption) Images {
 		return images[start:end]
 	}
 	return images
+}
+
+func report(images Images, opt *SyncOption) {
+	if !opt.Report {
+		return
+	}
+	var successCount, failedCount, cacheHitCount int
+	var report string
+
+	for _, img := range images {
+		if img.Success {
+			successCount++
+			if img.CacheHit {
+				cacheHitCount++
+			}
+		} else {
+			failedCount++
+		}
+	}
+	report = fmt.Sprintf(reportHeaderTpl, Banner, len(images), successCount, failedCount, cacheHitCount)
+
+	if opt.ReportLevel > 1 {
+		var buf bytes.Buffer
+		reportError, _ := template.New("").Parse(reportErrorTpl)
+		err := reportError.Execute(&buf, images)
+		if err != nil {
+			logrus.Errorf("failed to create report error: %s", err)
+		}
+		report += buf.String()
+	}
+
+	if opt.ReportLevel > 2 {
+		var buf bytes.Buffer
+		reportSuccess, _ := template.New("").Parse(reportSuccessTpl)
+		err := reportSuccess.Execute(&buf, images)
+		if err != nil {
+			logrus.Errorf("failed to create report error: %s", err)
+		}
+		report += buf.String()
+	}
+	fmt.Println(report)
 }

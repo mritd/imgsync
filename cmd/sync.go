@@ -44,7 +44,7 @@ Sync single image.`,
 		default:
 			logrus.Fatalf("image name format error: %s", args[0])
 		}
-		core.SyncImages(context.Background(), core.Images{core.Image{
+		core.SyncImages(context.Background(), core.Images{&core.Image{
 			Repo: repo,
 			User: user,
 			Name: name,

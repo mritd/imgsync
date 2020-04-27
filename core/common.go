@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"encoding/base64"
+	"time"
+)
 
 const (
 	DefaultLimit              = 20
@@ -16,30 +19,47 @@ const (
 
 	GcrKubeadmImagesTpl  = "https://k8s.gcr.io/v2/tags/list"
 	GcrStandardImagesTpl = "https://gcr.io/v2/%s/tags/list"
-	// GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
-	// GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
-	// GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
-	// GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
 
-	// ChangeLog = "CHANGELOG-%s.md"
-	// DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
-	// DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
 	FlannelImageName = "quay.io/coreos/flannel"
 
 	defaultSyncRetry     = 3
 	defaultSyncRetryTime = 10 * time.Second
+
+	// DockerHubTags  = "https://hub.docker.com/v2/repositories/%s/%s/tags/?page_size=100"
+	// DockerHubImage = "https://hub.docker.com/v2/repositories/%s/?page_size=100"
+	// ChangeLog = "CHANGELOG-%s.md"
+	// GcrStandardManifestsTpl = "https://gcr.io/v2/%s/%s/manifests/%s"
+	// GcrKubeadmManifestsTpl  = "https://k8s.gcr.io/v2/%s/manifests/%s"
+	// GcrStandardImageTagsTpl = "https://gcr.io/v2/%s/%s/tags/list"
+	// GcrKubeadmImageTagsTpl  = "https://k8s.gcr.io/v2/%s/tags/list"
+
+	bannerBase64    = "ZSAgZWVlZWVlZSBlZWVlZSBlZWVlZSBlICAgIGUgZWVlZWUgZWVlZQo4ICA4ICA4ICA4IDggICA4IDggICAiIDggICAgOCA4ICAgOCA4ICA4CjhlIDhlIDggIDggOGUgICAgOGVlZWUgOGVlZWU4IDhlICA4IDhlCjg4IDg4IDggIDggODggIjggICAgODggICA4OCAgIDg4ICA4IDg4Cjg4IDg4IDggIDggODhlZTggOGVlODggICA4OCAgIDg4ICA4IDg4ZTgK"
+	reportHeaderTpl = `%s
+========================================
+>> Total: %d
+>> Success: %d
+>> Failed: %d
+>> CacheHit: %d
+`
+	reportErrorTpl = `========================================
+Sync failed images:
+{{range .}}{{if not .Success}}{{. | print}}: {{.Err | println}}{{end}}{{end}}`
+	reportSuccessTpl = `========================================
+Sync success images:
+{{range .}}{{if .Success}}{{. | print}}: {{if .CacheHit}}{{"hit cache" | println}}{{else}}{{"not hit cache" | println}}{{end}}{{end}}{{end}}`
 )
 
 var (
 	ManifestDir = "manifests"
+	Banner, _   = base64.StdEncoding.DecodeString(bannerBase64)
 )
 
 func retry(count int, interval time.Duration, f func() error) error {
 	var err error
 redo:
+	count--
 	if err = f(); err != nil {
 		if count > 0 {
-			count--
 			if interval > 0 {
 				<-time.After(interval)
 			}

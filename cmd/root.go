@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -56,7 +55,6 @@ func initLog() {
 }
 
 func versionTpl() string {
-	var bannerBase64 = "ZSAgZWVlZWVlZSBlZWVlZSBlZWVlZSBlICAgIGUgZWVlZWUgZWVlZQo4ICA4ICA4ICA4IDggICA4IDggICAiIDggICAgOCA4ICAgOCA4ICA4CjhlIDhlIDggIDggOGUgICAgOGVlZWUgOGVlZWU4IDhlICA4IDhlCjg4IDg4IDggIDggODggIjggICAgODggICA4OCAgIDg4ICA4IDg4Cjg4IDg4IDggIDggODhlZTggOGVlODggICA4OCAgIDg4ICA4IDg4ZTgK"
 	var tpl = `%s
 Name: imgsync
 Version: %s
@@ -64,9 +62,7 @@ Arch: %s
 BuildTime: %s
 CommitID: %s
 `
-
-	banner, _ := base64.StdEncoding.DecodeString(bannerBase64)
-	return fmt.Sprintf(tpl, banner, version, runtime.GOOS+"/"+runtime.GOARCH, buildTime, commit)
+	return fmt.Sprintf(tpl, core.Banner, version, runtime.GOOS+"/"+runtime.GOARCH, buildTime, commit)
 }
 
 func prerun(_ *cobra.Command, _ []string) {
