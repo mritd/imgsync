@@ -4,14 +4,14 @@ A docker image sync tool.
 
 |Registry|Address|Docker Hub|Status|
 |--------|-------|----------|------|
-|Flannel|[quay.io/coreos/flannel](https://quay.io/coreos/flannel)|`gcrxio/quay.io_coreos_flannel`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Flannel/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|kubeadm|[k8s.gcr.io](https://k8s.gcr.io)|`gcrxio/k8s.gcr.io_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Kubeadm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Helm|[gcr.io/kubernetes-helm](https://gcr.io/kubernetes-helm)|`gcrxio/gcr.io_kubernetes-helm_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Helm/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Istio|[gcr.io/istio-release](https://gcr.io/istio-release)|`gcrxio/gcr.io_istio-release_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Istio/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|`gcrxio/gcr.io_linkerd-io_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Linkerd/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|`gcrxio/gcr.io_spinnaker-marketplace_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Spinnaker/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Distroless/badge.svg)](https://github.com/mritd/imgsync/actions)|
-|Samples|[gcr.io/google-samples](https://gcr.io/google-samples)|`gcrxio/gcr.io_google-samples_*`|[![](https://github.com/mritd/imgsync/workflows/Sync%20Google-samples/badge.svg)](https://github.com/mritd/imgsync/actions)|
+|Flannel|[quay.io/coreos/flannel](https://quay.io/coreos/flannel)|`gcrxio/quay.io_coreos_flannel`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|kubeadm|[k8s.gcr.io](https://k8s.gcr.io)|`gcrxio/k8s.gcr.io_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Helm|[gcr.io/kubernetes-helm](https://gcr.io/kubernetes-helm)|`gcrxio/gcr.io_kubernetes-helm_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Istio|[gcr.io/istio-release](https://gcr.io/istio-release)|`gcrxio/gcr.io_istio-release_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Linkerd|[gcr.io/linkerd-io](https://gcr.io/linkerd-io)|`gcrxio/gcr.io_linkerd-io_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|`gcrxio/gcr.io_spinnaker-marketplace_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|Samples|[gcr.io/google-samples](https://gcr.io/google-samples)|`gcrxio/gcr.io_google-samples_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 
 ## 特性
 
@@ -104,4 +104,5 @@ Use "imgsync [command] --help" for more information about a command..
 
 **工具目前仅支持同步到 Docker Hub，且以后没有同步到其他仓库打算。同步 Docker Hub
 时默认会同步到 `--user` 指定的用户下；本工具默认已经将支持的仓库同步到 Docker Hub [gcrxio](https://hub.docker.com/u/gcrxio) 用户下；
-其他更细节使用请自行通过 `--help` 查看以及参考本项目 [Github Action](https://github.com/mritd/imgsync/tree/master/.github/workflows) 配置文件。**
+其他更细节使用请自行通过 `--help` 查看以及参考本项目 [Travis CI](https://github.com/mritd/imgsync/tree/master/.travis.yml) 配置文件。
+项目目录下的 Github Action 配置已经停用(性能不行)，没删除是因为调了好久删了可惜，以后备用吧。**
