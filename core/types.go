@@ -1,6 +1,9 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Image struct {
 	Repo string
@@ -22,7 +25,7 @@ func (img *Image) String() string {
 
 func (img *Image) MergeName() string {
 	if img.User != "" {
-		return fmt.Sprintf("%s_%s_%s", img.Repo, img.User, img.Name)
+		return fmt.Sprintf("%s_%s_%s", img.Repo, strings.ReplaceAll(img.User, "/", "_"), img.Name)
 	}
 	return fmt.Sprintf("%s_%s", img.Repo, img.Name)
 }

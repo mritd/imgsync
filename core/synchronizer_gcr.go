@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/panjf2000/ants/v2"
@@ -79,7 +78,7 @@ func (gcr *Gcr) Images(ctx context.Context) Images {
 					} else {
 						imgCh <- Image{
 							Repo: DefaultGcrRepo,
-							User: strings.ReplaceAll(gcr.namespace, "/", "_"),
+							User: gcr.namespace,
 							Name: imageName,
 							Tag:  tag,
 						}
