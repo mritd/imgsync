@@ -33,6 +33,7 @@ jobs:
     - stage: Build imgsync
       script:
         - make install
+        - go get -u github.com/gozap/msgsend
     - stage: Sync Kubeadm
       script:
         - imgsync gcr --kubeadm --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
@@ -58,6 +59,8 @@ jobs:
       script:
         - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests
 
+after_failure:
+  - bash .travis-after-failure.sh
 
 after_success:
-  - bash .travis-after.sh
+  - bash .travis-after-success.sh
