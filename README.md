@@ -1,4 +1,4 @@
-# imgsync
+![imgsync](.logo.png)
 
 A docker image sync tool.
 
