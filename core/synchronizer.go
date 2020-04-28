@@ -59,6 +59,8 @@ func NewSynchronizer(name string) Synchronizer {
 		return &gcr
 	case "flannel":
 		return &fl
+	case "kNative":
+		return &kNative
 	default:
 		logrus.Fatalf("failed to create synchronizer %s: unknown synchronizer", name)
 		// just for compiling
@@ -145,7 +147,7 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 		return nil
 	}
 	destImage := Image{
-		Repo: DefaultDockerRepo,
+		Repo: defaultDockerRepo,
 		User: opt.User,
 		Name: image.MergeName(),
 		Tag:  image.Tag,
@@ -181,11 +183,13 @@ func sync2DockerHub(image *Image, opt *SyncOption) error {
 		Password: opt.Password,
 	}}
 
+	logrus.Debugf("copy %s to docker hub...", image.String())
 	_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
 		SourceCtx:          sourceCtx,
 		DestinationCtx:     destinationCtx,
 		ImageListSelection: copy.CopyAllImages,
 	})
+	logrus.Debugf("%s copy done.", image.String())
 	return err
 }
 

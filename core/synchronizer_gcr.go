@@ -55,9 +55,9 @@ func (gcr *Gcr) Images(ctx context.Context) Images {
 			default:
 				var iName string
 				if gcr.kubeadm {
-					iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, DefaultGcrNamespace, imageName)
+					iName = fmt.Sprintf("%s/%s/%s", defaultGcrRepo, defaultGcrNamespace, imageName)
 				} else {
-					iName = fmt.Sprintf("%s/%s/%s", DefaultGcrRepo, gcr.namespace, imageName)
+					iName = fmt.Sprintf("%s/%s/%s", defaultGcrRepo, gcr.namespace, imageName)
 				}
 
 				logrus.Debugf("query image [%s] tags...", iName)
@@ -71,13 +71,13 @@ func (gcr *Gcr) Images(ctx context.Context) Images {
 				for _, tag := range tags {
 					if gcr.kubeadm {
 						imgCh <- Image{
-							Repo: DefaultK8sRepo,
+							Repo: defaultK8sRepo,
 							Name: imageName,
 							Tag:  tag,
 						}
 					} else {
 						imgCh <- Image{
-							Repo: DefaultGcrRepo,
+							Repo: defaultGcrRepo,
 							User: gcr.namespace,
 							Name: imageName,
 							Tag:  tag,
@@ -102,9 +102,9 @@ func (gcr *Gcr) imageNames() []string {
 
 	var addr string
 	if gcr.kubeadm {
-		addr = GcrKubeadmImagesTpl
+		addr = gcrKubeadmImagesTpl
 	} else {
-		addr = fmt.Sprintf(GcrStandardImagesTpl, gcr.namespace)
+		addr = fmt.Sprintf(gcrStandardImagesTpl, gcr.namespace)
 	}
 
 	resp, body, errs := gorequest.New().

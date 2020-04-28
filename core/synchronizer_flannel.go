@@ -18,13 +18,13 @@ func (fl *Flannel) Images(ctx context.Context) Images {
 	select {
 	case <-ctx.Done():
 	default:
-		tags, err := getImageTags(FlannelImageName, TagsOption{Timeout: DefaultCtxTimeout})
+		tags, err := getImageTags(flannelImageName, TagsOption{Timeout: DefaultCtxTimeout})
 		if err != nil {
-			logrus.Errorf("failed to get [%s] image tags, error: %s", FlannelImageName, err)
+			logrus.Errorf("failed to get [%s] image tags, error: %s", flannelImageName, err)
 			return nil
 		}
 
-		ss := strings.Split(FlannelImageName, "/")
+		ss := strings.Split(flannelImageName, "/")
 		for _, tag := range tags {
 			images = append(images, &Image{
 				Repo: ss[0],
