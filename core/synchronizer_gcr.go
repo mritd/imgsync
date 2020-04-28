@@ -25,7 +25,7 @@ func (gcr *Gcr) Images(ctx context.Context) Images {
 	publicImageNames := gcr.imageNames()
 
 	logrus.Info("get gcr public image tags...")
-	pool, err := ants.NewPool(gcr.queryLimit+1, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
+	pool, err := ants.NewPool(gcr.queryLimit, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
 		logrus.Error(i)
 	}))
 	if err != nil {

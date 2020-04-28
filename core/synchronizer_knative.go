@@ -55,7 +55,7 @@ func (kn *KNative) Images(ctx context.Context) Images {
 	publicImageNames := kn.imageNames()
 
 	logrus.Info("get knative public image tags...")
-	pool, err := ants.NewPool(kn.queryLimit+1, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
+	pool, err := ants.NewPool(kn.queryLimit, ants.WithPreAlloc(true), ants.WithPanicHandler(func(i interface{}) {
 		logrus.Error(i)
 	}))
 	if err != nil {
