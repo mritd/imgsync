@@ -24,6 +24,7 @@ stages:
   - Sync Samples
   - Sync Linkerd
   - Sync Spinnaker
+  - Sync KNative
 
 before_script:
   - bash .travis-before.sh
@@ -67,6 +68,10 @@ jobs:
       stage: Sync Spinnaker
       script:
         - imgsync gcr --namespace spinnaker-marketplace --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
+    - name: Sync KNative
+      stage: Sync KNative
+      script:
+        - imgsync knative --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
 
 after_failure:
   - bash .travis-after-failure.sh
