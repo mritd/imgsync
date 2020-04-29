@@ -14,6 +14,7 @@ A docker image sync tool.
 |Spinnaker|[gcr.io/spinnaker-marketplace](https://gcr.io/spinnaker-marketplace)|`gcrxio/gcr.io_spinnaker-marketplace_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 |Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 |Samples|[gcr.io/google-samples](https://gcr.io/google-samples)|`gcrxio/gcr.io_google-samples_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
+|KNative|[gcr.io/knative-releases](https://gcr.io/knative-releases)|`gcrxio/gcr.io_knative-releases_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 
 ## 特性
 
@@ -102,6 +103,13 @@ Use "imgsync [command] --help" for more information about a command..
 工具默认会转换原镜像名称，转换规则为将原镜像名称内的 `/` 全部替换为 `_`，例如(假设 Docker Hub 用户名为 `gcrxio`):
 
 **`gcr.io/istio-release/pilot:latest` ==> `gcrxio/gcr.io_istio-release_pilot:latest`**
+
+## 国内 Docker Hub Mirror
+
+- Aliyun: `[系统分配前缀].mirror.aliyuncs.com`
+- Tencent: `https://mirror.ccs.tencentyun.com`
+- 163: `http://hub-mirror.c.163.com`
+- Azure: `dockerhub.azk8s.cn`
 
 ## 其他说明
 
