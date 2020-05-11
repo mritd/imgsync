@@ -15,6 +15,14 @@ A docker image sync tool.
 |Distroless|[gcr.io/distroless](https://gcr.io/distroless)|`gcrxio/gcr.io_distroless_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 |Samples|[gcr.io/google-samples](https://gcr.io/google-samples)|`gcrxio/gcr.io_google-samples_*`|[![Build Status](https://travis-ci.org/mritd/imgsync.svg?branch=master)](https://travis-ci.org/mritd/imgsync)|
 
+**如何快速拉取 kubeadm 镜像?**
+
+```sh
+for img in `kubeadm config images list`; do
+    docker pull "gcrxio/$(echo $img | tr '/' '_')" && docker tag "gcrxio/$(echo $img | tr '/' '_')" $img;
+done
+```
+
 ## 特性
 
 - **不依赖 Docker 运行**
