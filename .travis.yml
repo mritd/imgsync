@@ -71,7 +71,7 @@ jobs:
     - name: Sync KNative
       stage: Sync KNative
       script:
-        - imgsync knative --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
+        - imgsync gcr --namespace knative-releases --user ${DOCKER_USER} --password ${DOCKER_PASSWORD} --process-limit 30 --manifests ${GCR_REPO}/manifests --report
 
 after_failure:
   - bash .travis-after-failure.sh

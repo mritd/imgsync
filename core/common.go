@@ -23,12 +23,9 @@ const (
 	defaultSyncRetry     = 3
 	defaultSyncRetryTime = 10 * time.Second
 
-	defaultDockerRepo   = "docker.io"
-	defaultK8sRepo      = "k8s.gcr.io"
-	defaultGcrRepo      = "gcr.io"
-	defaultGcrNamespace = "google-containers"
-
-	gcrKubeadmImagesTpl  = "https://k8s.gcr.io/v2/tags/list"
+	defaultDockerRepo    = "docker.io"
+	defaultK8sRepo       = "k8s.gcr.io"
+	defaultGcrRepo       = "gcr.io"
 	gcrStandardImagesTpl = "https://gcr.io/v2/%s/tags/list"
 	flannelImageName     = "quay.io/coreos/flannel"
 

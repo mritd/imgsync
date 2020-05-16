@@ -59,8 +59,6 @@ func NewSynchronizer(name string) Synchronizer {
 		return &gcr
 	case "flannel":
 		return &fl
-	case "kNative":
-		return &kNative
 	default:
 		logrus.Fatalf("failed to create synchronizer %s: unknown synchronizer", name)
 		// just for compiling
