@@ -32,6 +32,9 @@ func init() {
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.OnlyDownloadManifests, "download-manifests", false, "only download manifests")
 	gcrCmd.PersistentFlags().BoolVar(&gcrSyncOption.Report, "report", false, "report sync detail")
 	gcrCmd.PersistentFlags().IntVar(&gcrSyncOption.ReportLevel, "report-level", 1, "report sync detail level")
-	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.ReportFile, "report-file", "imgsync_report", "report sync detail file")
+	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.ReportName, "report-name", "kubeadm", "report name")
+	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.TelegramApi, "telegram-api", "https://api.telegram.org", "telegram api address")
+	gcrCmd.PersistentFlags().StringVar(&gcrSyncOption.TelegramToken, "telegram-token", "", "telegram bot token")
+	gcrCmd.PersistentFlags().Int64Var(&gcrSyncOption.TelegramGroup, "telegram-group", 0, "telegram group id")
 	gcrCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }

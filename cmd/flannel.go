@@ -27,6 +27,9 @@ func init() {
 	flannelCmd.PersistentFlags().BoolVar(&flSyncOption.OnlyDownloadManifests, "download-manifests", false, "only download manifests")
 	flannelCmd.PersistentFlags().BoolVar(&flSyncOption.Report, "report", false, "report sync detail")
 	flannelCmd.PersistentFlags().IntVar(&flSyncOption.ReportLevel, "report-level", 1, "report sync detail level")
-	flannelCmd.PersistentFlags().StringVar(&flSyncOption.ReportFile, "report-file", "imgsync_report", "report sync detail file")
+	flannelCmd.PersistentFlags().StringVar(&gcrSyncOption.ReportName, "report-name", "flannel", "report name")
+	flannelCmd.PersistentFlags().StringVar(&gcrSyncOption.TelegramApi, "telegram-api", "https://api.telegram.org", "telegram api address")
+	flannelCmd.PersistentFlags().StringVar(&gcrSyncOption.TelegramToken, "telegram-token", "", "telegram bot token")
+	flannelCmd.PersistentFlags().Int64Var(&gcrSyncOption.TelegramGroup, "telegram-group", 0, "telegram group id")
 	flannelCmd.PersistentFlags().StringVar(&core.ManifestDir, "manifests", "manifests", "manifests storage dir")
 }

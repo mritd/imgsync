@@ -41,8 +41,11 @@ type SyncOption struct {
 	BatchNumber           int           // Sync specified batch
 	OnlyDownloadManifests bool          // Only download Manifests file
 	Report                bool          // Report sync result
+	ReportName            string        // Report name
 	ReportLevel           int           // Report level
-	ReportFile            string        // Report file
+	TelegramApi           string        // Telegram api address
+	TelegramToken         string        // Telegram bot token
+	TelegramGroup         int64         // Telegram group id
 
 	QueryLimit int    // Query Gcr images limit
 	NameSpace  string // Gcr image namespace
@@ -262,7 +265,7 @@ func report(images Images, opt *SyncOption) {
 			failedCount++
 		}
 	}
-	report = fmt.Sprintf(reportHeaderTpl, Banner, len(images), failedCount, successCount, cacheHitCount)
+	report = fmt.Sprintf(reportHeaderTpl, Banner, opt.ReportName, len(images), failedCount, successCount, cacheHitCount)
 
 	if opt.ReportLevel > 1 {
 		var buf bytes.Buffer
@@ -284,10 +287,8 @@ func report(images Images, opt *SyncOption) {
 		report += buf.String()
 	}
 	fmt.Println(report)
-	if opt.ReportFile != "" {
-		err := ioutil.WriteFile(opt.ReportFile, []byte(report), 0644)
-		if err != nil {
-			logrus.Errorf("failed to create report file: %s", err)
-		}
+	err := notification(report, opt.TelegramApi, opt.TelegramToken, opt.TelegramGroup)
+	if err != nil {
+		logrus.Errorf("failed send report message to telegram: %s", err)
 	}
 }

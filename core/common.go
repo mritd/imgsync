@@ -32,6 +32,7 @@ const (
 	bannerBase64    = "ZSAgZWVlZWVlZSBlZWVlZSBlZWVlZSBlICAgIGUgZWVlZWUgZWVlZQo4ICA4ICA4ICA4IDggICA4IDggICAiIDggICAgOCA4ICAgOCA4ICA4CjhlIDhlIDggIDggOGUgICAgOGVlZWUgOGVlZWU4IDhlICA4IDhlCjg4IDg4IDggIDggODggIjggICAgODggICA4OCAgIDg4ICA4IDg4Cjg4IDg4IDggIDggODhlZTggOGVlODggICA4OCAgIDg4ICA4IDg4ZTgK"
 	reportHeaderTpl = `%s
 ========================================
+>> Sync Repo: %s
 >> Sync Total: %d
 >> Sync Failed: %d
 >> Sync Success: %d

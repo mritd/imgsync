@@ -12,6 +12,8 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v1.0.0
+	github.com/spf13/viper v1.4.0
+	gopkg.in/tucnak/telebot.v2 v2.0.0-20200426184946-59629fe0483e
 	moul.io/http2curl v1.0.0 // indirect
 )
 
