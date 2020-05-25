@@ -35,7 +35,6 @@ jobs:
       stage: Build imgsync
       script:
         - make install
-        - go get -u github.com/gozap/msgsend
     - name: Sync Kubeadm
       stage: Sync Kubeadm
       script:
