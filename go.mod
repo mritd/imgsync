@@ -6,7 +6,7 @@ require (
 	github.com/containers/image/v5 v5.4.4
 	github.com/elazarl/goproxy v0.0.0-20200426045556-49ad98f6dac1 // indirect
 	github.com/json-iterator/go v1.1.9
-	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
+	github.com/opencontainers/image-spec v1.0.2
 	github.com/panjf2000/ants/v2 v2.4.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/sirupsen/logrus v1.6.0
